@@ -6,172 +6,102 @@
 
 ## See the consequence before you make the cut.
 
-CLIO is a script-first editorial workspace for tracing what a screenplay
-revision changes. It connects a revision source to scene parents, timed child
-beats, dependency paths, duration, agent evidence, and an explicit human
-decision.
+A screenplay change can ripple far beyond the line being revised. It can affect
+later scenes, timed beats, narration, payoffs, and runtime—often without being
+obvious until much later in the edit.
 
-It does not ask an agent to rewrite a film autonomously. It gives an editor a
-better way to see the downstream cost of a change before committing it.
+CLIO makes that chain visible. It connects a revision to the screenplay map,
+lets an editor inspect the affected beats, and returns evidence for a decision.
+The editor remains in control of every change.
 
-## The short version
+## A change should be reviewable, not surprising
 
-An editor changes one story beat. That change may quietly affect a later
-narration line, a payoff, a sequence of child beats, or the runtime of the
-film. Today, finding those dependencies is mostly a manual hunt across script
-versions, notes, and memory.
+Script tools are excellent at showing pages and comments. They are less useful
+when an editor needs to answer a harder question: what does this revision
+change downstream?
 
-CLIO makes the relationship visible. It maps a screenplay as a graph, lets the
-editor drill from scene to timed beat, traces the chain around a revision, and
-asks a bounded agent to return evidence for four questions:
+CLIO turns that question into a visual review loop. Instead of hunting through
+versions and relying on memory, an editor can trace the path, inspect the
+timing, ask for an explanation, and decide with the context in view.
 
-- What comes before and after this scene?
-- Which scenes are affected if the text changes?
-- What becomes unnecessary if it is removed, and how does runtime change?
-- Where could a new scene connect?
+## What CLIO delivers
 
-The answer is not an opaque chat paragraph. CLIO returns a visible graph,
-timing calculation, revision reference, and critic note. The editor still
-decides whether anything changes.
+| Capability | Editorial value |
+| --- | --- |
+| <strong>Script map</strong> | Keeps the active revision, scenes, and their relationships on one screen. |
+| <strong>Beat-level detail</strong> | Opens a scene into timed beats without losing the wider story context. |
+| <strong>Impact trace</strong> | Follows the scenes, action, narration, and timing connected to a change. |
+| <strong>Evidence-backed review</strong> | Returns the context behind a proposal alongside the recommendation. |
+| <strong>Runtime awareness</strong> | Makes the duration effect of a proposed removal concrete. |
+| <strong>Source comparison</strong> | Loads a screenplay source for comparison before an editor chooses to update the map. |
 
-## The problem
+The demonstration follows a fictional Titanic storyboard: 25 scenes, 125 timed
+beats, and one V5 collision revision centered on SC 17.
 
-Script tools are good at displaying text and comments. They are much weaker at
-showing causal structure: which scene motivates a later scene, which beat pays
-off a change, or which revision turned a stable sequence into a continuity
-risk.
-
-Generative AI can make this worse if it is allowed to sound certain without
-showing what it inspected. A useful editorial agent should be able to navigate
-the same structured story state as the human, identify evidence, calculate a
-bounded impact, and stop at the decision boundary.
-
-CLIO is built around that boundary:
-
-> The agent can propose a consequence. The editor remains the screenplay authority.
-
-## What we built
-
-| CLIO capability | What it does | Why it matters |
-| --- | --- | --- |
-| Script map | Shows the revision source alongside scene nodes and their relationships. | A change has a visible place in the film instead of living in a comment thread. |
-| Timed beat expansion | Opens a scene into five timed child beats with action text and narration. | A local revision can be inspected at the level where continuity breaks. |
-| Dependency trace | Follows upstream/downstream relationships while dimming unrelated work. | The editor can reason about a path without losing the full-map context. |
-| Bounded agent run | Supports explain, edit, remove, and add proposals. | The agent helps investigate; it does not become an invisible co-writer. |
-| Evidence stream | Separates narrative, graph, analytics, revision, and critic phases. | Each recommendation carries inspectable inputs and provenance. |
-| Runtime impact | Calculates the selected removal against the current timed map. | Consequences are concrete, not hand-wavy. |
-| Script Git | Loads a GitHub screenplay, parses scenes/beats, shows revision history and map diff, then waits for an explicit apply. | Source-control context becomes a reviewable editorial transition. |
-| Recovery guard | Restores the captured pre-import graph only when no later change would be overwritten. | A reversible path does not silently erase newer work. |
-
-The current demonstration is a fictional Titanic storyboard: 25 scenes, 125
-timed beats, and one V5 collision revision focused on SC 17. The scope is
-deliberate. It proves a full change-understanding loop without pretending to
-be a production asset-management or delivery platform.
-
-## Product walkthrough
+## Watch the workflow
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/azharizz/CLIO/main/docs/assets/clio-workflow.gif" alt="CLIO workflow GIF: onboarding, screenplay map, impact inspection, agent proposal, and Script Git comparison" width="100%">
+  <img src="https://raw.githubusercontent.com/azharizz/CLIO/main/docs/assets/clio-workflow.gif" alt="CLIO workflow: onboarding, screenplay map, impact inspection, agent proposal, and Script Git comparison" width="100%">
 </p>
 
-| 1. Script map | 2. Bounded agent evidence |
+| Script map | Evidence review |
 | --- | --- |
 | ![CLIO screenplay map](https://raw.githubusercontent.com/azharizz/CLIO/main/docs/screenshots/01-workspace-loaded.png) | ![CLIO agent evidence overlay](https://raw.githubusercontent.com/azharizz/CLIO/main/docs/screenshots/04-agent-recommendation.png) |
-| The V5 source and every scene share one visual dependency surface. | The agent exposes graph, timing, revision, and critic phases without auto-writing the map. |
+| The V5 source and every scene share one visual dependency surface. | The proposal exposes the context behind its recommendation for inspection. |
 
-| 3. Scene and beat impact | 4. Git comparison before apply |
+| Scene detail | Source comparison |
 | --- | --- |
 | ![CLIO scene inspector and expanded beats](https://raw.githubusercontent.com/azharizz/CLIO/main/docs/screenshots/03-impact-inspector.png) | ![CLIO Script Git comparison](https://raw.githubusercontent.com/azharizz/CLIO/main/docs/screenshots/10-script-git-loaded.png) |
-| SC 17 can expand into timed child beats while retaining its lineage. | A loaded source remains read-only until an editor chooses to apply it. |
+| SC 17 expands into timed beats while keeping its story context. | A loaded screenplay source stays in review until an editor chooses to apply it. |
 
-## What people and agents can now do together
+## From change to decision
 
-The editor selects the change and supplies the judgment. CLIO gathers the
-cross-cutting context that is tedious to reconstruct by hand.
+1. Select a revision or scene.
+2. Expand the beats and trace the connected path.
+3. Ask CLIO to explain, model, remove, or add.
+4. Review the evidence and make the editorial call.
 
-| Agent can | Editor must decide |
+## CLIO prepares. The editor decides.
+
+| CLIO prepares | The editor decides |
 | --- | --- |
-| Read the selected node, linked scenes, timed beats, and active revision. | Whether the path represents a real continuity issue. |
-| Summarize upstream/downstream relationships. | Whether to retain, edit, or remove the material. |
-| Estimate affected scenes and runtime after a proposed removal. | Whether a runtime tradeoff is acceptable. |
-| Suggest a new connection in the story graph. | Whether the proposed connection belongs in the screenplay. |
-| Load and parse a GitHub source for comparison. | Whether to press <strong>APPLY TO MAP</strong> or <strong>RESTORE BEFORE</strong>. |
+| Linked scenes, beats, timing, and revision context. | Whether the relationship is editorially meaningful. |
+| An explanation or a proposed consequence. | Whether to retain, edit, remove, or add material. |
+| A comparison with a loaded screenplay source. | Whether to apply that source to the map. |
 
-This is a stronger interaction than an assistant guessing from isolated text.
-The agent works against visible, structured state. The person can verify the
-output, correct the premise, and only then make a durable change.
+This keeps the agent useful without turning it into an invisible co-writer.
+Its role is to surface the context; the person making the cut owns the
+decision.
 
-## How it works
+## Why it matters
 
-~~~text
-editor selects a revision or scene
-              ↓
-CLIO reads the script graph, lineage, timing, and revision context
-              ↓
-agent emits a bounded evidence pass
-              ↓
-workspace shows the proposal and provenance
-              ↓
-editor explicitly changes the graph or keeps the current script
-~~~
+Continuity problems are expensive because they are discovered late. CLIO makes
+the dependency chain visible earlier, while the change is still easy to
+understand and discuss.
 
-| Layer | Implementation | Boundary |
-| --- | --- | --- |
-| Workspace | TanStack Start, React, React Flow-style graph surface, keyboard navigation, and overlay panels. | The browser shows source and runtime labels rather than concealing fallbacks. |
-| Graph | ClickHouse-backed repository with a local fallback snapshot. An optional MCP adapter is tried before the direct store for reads. | MCP is read-only; mutations do not travel through it. |
-| API | FastAPI routes for graph operations, impact, agent streams, and Script Git transitions. | Create, update, delete, apply, and restore stay explicit operations. |
-| Agent | A simulated local stream by default; a configured live provider can use bounded graph, lineage, timing, revision, and critic tools. | The agent has no automatic approval or screenplay-write capability. |
-| Deployment | Firebase Hosting serves the public client and can route configured API calls to the service path. | A live page is not mislabeled as live graph/provider evidence when it is using fallback state. |
+The same review pattern can help with any versioned narrative that carries
+dependencies: product requirements, release plans, legal documents, and more.
 
-## Why this matters
-
-CLIO treats a screenplay revision as an operational decision, not merely a
-line of text.
-
-- It makes the dependency graph visible before a revision becomes a late-stage continuity surprise.
-- It keeps a granular scene/beat view connected to a film-wide map.
-- It makes agent reasoning inspectable through graph, timing, revision, and critic evidence.
-- It keeps the irreversible moments explicit: edit, delete, apply a Git map, and restore a prior map.
-- It names the active source and runtime mode so reviewers can see the difference between a configured service and a local demonstration.
-
-The pattern applies beyond film: product requirements, release plans, legal
-documents, and other versioned narratives all carry dependencies that deserve
-the same visible review loop.
-
-## Try it
+## Try CLIO
 
 - **Live app:** [clio-agentic.web.app](https://clio-agentic.web.app/)
 - **Workspace:** [clio-agentic.web.app/workspace](https://clio-agentic.web.app/workspace)
 - **Source:** [github.com/azharizz/CLIO](https://github.com/azharizz/CLIO)
-- **Detailed workflow:** [docs/workflow.md](https://github.com/azharizz/CLIO/blob/main/docs/workflow.md)
+- **Technical workflow:** [docs/workflow.md](https://github.com/azharizz/CLIO/blob/main/docs/workflow.md)
 
-Suggested live path:
+Suggested review path:
 
 1. Enter the workspace and inspect the V5 collision revision.
-2. Select SC 17 and use <strong>SHOW MAP</strong> to reveal its beats.
-3. Toggle <strong>TRACE</strong> to isolate the dependency path.
-4. Open <strong>AGENT</strong>, choose <strong>EXPLAIN</strong>, and read the evidence phases.
-5. Open <strong>GIT</strong>, load the included offline fixture, and compare the current map with the loaded source.
-6. Read the labels in the header before interpreting the data source or agent result.
-
-## Honest limits
-
-- The built-in story is synthetic demo data, not a real screenplay or a production integration.
-- The public URL hosts the interface. The page visibly says whether it is using ClickHouse MCP, direct ClickHouse, local fallback, a live provider, or local simulation.
-- The simulated agent is deterministic and proposal-only. A live provider requires explicit configuration and remains proposal-only.
-- CLIO does not generate new screenplay content, handle production footage, or make delivery decisions in this script-first slice.
-- Git timing is exact only when source markers exist; estimated timing is labelled as such.
-- Public GitHub files can load without a token. Private reads need <code>CLIO_GITHUB_TOKEN</code>.
-- A restore refuses to overwrite a later graph or workflow change.
+2. Select SC 17, then choose <strong>SHOW MAP</strong>.
+3. Open <strong>AGENT</strong>, choose <strong>EXPLAIN</strong>, and read the evidence.
+4. Open <strong>GIT</strong> to compare the current map with a loaded source.
 
 ## Built with
 
 TanStack Start · React · TypeScript · Vite · React Flow · FastAPI · Python ·
-ClickHouse · optional read-only MCP · Firebase Hosting · Cloud Run deployment
-material · OpenRouter-compatible agent provider seam · Playwright · Vitest
+ClickHouse · Firebase Hosting · Cloud Run · Playwright · Vitest
 
 ## Source and license
 
 The source is public at [github.com/azharizz/CLIO](https://github.com/azharizz/CLIO)
-and is licensed under [Apache-2.0](https://github.com/azharizz/CLIO/blob/main/LICENSE).
-The walkthrough uses synthetic data and repository-owned screenshots.
+and licensed under [Apache-2.0](https://github.com/azharizz/CLIO/blob/main/LICENSE).
