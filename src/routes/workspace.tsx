@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ClioWorkspace } from './index'
-import { loadWorkspaceSnapshot } from '../lib/server-functions'
+import { createFallbackSnapshot } from '../lib/workspace'
 
 export const Route = createFileRoute('/workspace')({
-  loader: () => loadWorkspaceSnapshot(),
+  // Keep the alternate entry point just as responsive as `/`; the workspace
+  // component hydrates its authoritative snapshot in the background.
+  loader: () => createFallbackSnapshot(),
   component: WorkspaceRoute,
   head: () => ({
     meta: [{ title: 'CLIO — Continuity & Lineage Intelligence Operator' }],

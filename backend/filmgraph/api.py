@@ -50,6 +50,7 @@ from filmgraph.models import (
     WorkspaceSummary,
     ScriptGitApplyRequest,
     ScriptGitLoadRequest,
+    ScriptGitRevertRequest,
 )
 from filmgraph.integrations.mcp import McpFirstFilmGraphService
 from filmgraph.integrations.agents import provider_for
@@ -99,19 +100,61 @@ def _conflict(error_code: str, message: str, **details):
 
 def _latest_script_git_state(workflows: List[Workflow], service: McpFirstFilmGraphService) -> Optional[Dict[str, Any]]:
     """Reconstruct the current GitHub source from append-only workflow events."""
+    missing = object()
     events: List[WorkflowEvent] = []
     for workflow in workflows:
         events.extend(service.list_workflow_events(workflow.id))
     for event in sorted(events, key=lambda item: (item.occurred_at, item.sequence), reverse=True):
-        if event.kind not in {"script.git.applied", "script.git.loaded"}:
+        if event.kind not in {"script.git.applied", "script.git.loaded", "script.git.reverted"}:
             continue
-        state = event.payload.get("script_git") if isinstance(event.payload, dict) else None
+        state = event.payload.get("script_git", missing) if isinstance(event.payload, dict) else missing
+        # A restore to the local/demo script is represented explicitly as
+        # `script_git: null`; do not fall through to an older Git apply event.
+        if event.kind == "script.git.reverted" and state is None:
+            return None
         if isinstance(state, dict):
             return state
         # Older local events may have stored the metadata at the top level.
         if isinstance(event.payload, dict) and event.payload.get("repository"):
             return dict(event.payload)
     return None
+
+
+_SCRIPT_GRAPH_KINDS = {"script", "scene", "beat", "story_beat"}
+
+
+def _serialize_script_graph(nodes: List[GraphNode], edges: List[GraphEdge]) -> Dict[str, Any]:
+    """Serialize only the replaceable script slice for Git recovery.
+
+    Production-shaped rows are intentionally excluded. `replace_script_graph`
+    preserves those rows, so including them here would cause duplicate inserts
+    when a previous script revision is restored.
+    """
+    script_nodes = [node for node in nodes if node.kind.value in _SCRIPT_GRAPH_KINDS]
+    script_ids = {node.id for node in script_nodes}
+    script_edges = [edge for edge in edges if edge.source_id in script_ids and edge.target_id in script_ids]
+    return {
+        "nodes": [node.model_dump(mode="json") for node in script_nodes],
+        "edges": [edge.model_dump(mode="json") for edge in script_edges],
+    }
+
+
+def _deserialize_script_graph(value: Any) -> tuple[List[GraphNode], List[GraphEdge]]:
+    """Validate an event snapshot before it crosses the mutation boundary."""
+    if not isinstance(value, dict):
+        raise ValueError("script graph snapshot is missing")
+    raw_nodes = value.get("nodes")
+    raw_edges = value.get("edges")
+    if not isinstance(raw_nodes, list) or not isinstance(raw_edges, list):
+        raise ValueError("script graph snapshot is malformed")
+    nodes = [GraphNode.model_validate(item) for item in raw_nodes]
+    edges = [GraphEdge.model_validate(item) for item in raw_edges]
+    if not nodes or not any(node.kind in {GraphNodeKind.script, GraphNodeKind.scene} for node in nodes):
+        raise ValueError("script graph snapshot has no script scenes")
+    node_ids = {node.id for node in nodes}
+    if any(edge.source_id not in node_ids or edge.target_id not in node_ids for edge in edges):
+        raise ValueError("script graph snapshot contains an invalid edge")
+    return nodes, edges
 
 
 def _require_workflow(workflow_id: UUID) -> Workflow:
@@ -226,7 +269,7 @@ def _replay_catalog_events(
             for proposal in runtime_proposals:
                 proposal["selected"] = _proposal_matches(proposal, proposal_id)
         if event.kind in {"workflow.approved", "editorial.resolution.approved"}:
-            selected = proposal_id or "cut-sc47"
+            selected = proposal_id or "cut-sc17"
             for proposal in runtime_proposals:
                 proposal["selected"] = _proposal_matches(proposal, selected)
 
@@ -254,7 +297,7 @@ def _proposal_matches(row: Dict[str, Any], value: str) -> bool:
     normalized = value.lower().replace("_", "-").replace(" ", "-")
     row_id = str(row.get("id", "")).lower()
     label = str(row.get("label", "")).lower().replace("_", "-").replace(" ", "-")
-    return normalized in {row_id, label} or (normalized == "cut-sc47" and "cut-sc-47" in label)
+    return normalized in {row_id, label} or (normalized == "cut-sc17" and "cut-sc-17" in label)
 
 
 def _variant_matches(row: Dict[str, Any], value: str) -> bool:
@@ -842,6 +885,12 @@ def script_git_apply(request: ScriptGitApplyRequest):
         raise HTTPException(status_code=422, detail={"error_code": "script_git.no_scenes", "message": "The selected file did not contain a screenplay scene"})
 
     service = _service()
+    repository = _repo()
+    # Capture the active script slice before replacing it. This is kept in the
+    # append-only apply event so the editor can demonstrate a real before/after
+    # revision and recover without trusting browser state.
+    previous_graph = _serialize_script_graph(repository.list_graph_nodes(), repository.list_graph_edges())
+    previous_script_git = _latest_script_git_state(service.list_workflows(), service)
     service.replace_script_graph(nodes, edges)
     state = compact_git_state(document)
     event = service.append_workflow_event(
@@ -850,6 +899,8 @@ def script_git_apply(request: ScriptGitApplyRequest):
         request.actor,
         {
             "script_git": state,
+            "previous_script_git": previous_script_git,
+            "previous_graph": previous_graph,
             "revision_id": document.get("revision_id"),
             "content_hash": document.get("content_hash"),
             "scene_count": document.get("parsed", {}).get("scene_count", 0) if isinstance(document.get("parsed"), dict) else 0,
@@ -864,6 +915,71 @@ def script_git_apply(request: ScriptGitApplyRequest):
         "graph_nodes": nodes,
         "graph_edges": edges,
         "provenance": event.provenance,
+    }
+
+
+@router.post("/script-git/revert")
+def script_git_revert(request: ScriptGitRevertRequest):
+    """Restore the script graph captured by the latest reversible Git event.
+
+    Recovery is intentionally an explicit human action. It only succeeds when
+    the latest workflow event is a Git apply/restore event; this prevents a
+    restore click from silently erasing a later scene edit or approval.
+    """
+    workflow_id = request.workflow_id or _active_workflow_id()
+    if workflow_id is None:
+        raise HTTPException(status_code=404, detail={"error_code": "script_git.workflow_missing", "message": "no active script workflow"})
+
+    repository = _repo()
+    service = _service()
+    workflow = service.get_workflow(workflow_id)
+    if workflow is None:
+        raise HTTPException(status_code=404, detail={"error_code": "script_git.workflow_missing", "message": "no active script workflow"})
+    events = repository.list_workflow_events(workflow_id)
+    if not events or events[-1].kind not in {"script.git.applied", "script.git.reverted"}:
+        _conflict(
+            "script_git.revert_not_ready",
+            "restore is only available immediately after a Git revision change",
+            workflow_id=str(workflow_id),
+        )
+    event_payload = events[-1].payload if isinstance(events[-1].payload, dict) else {}
+    try:
+        nodes, edges = _deserialize_script_graph(event_payload.get("previous_graph"))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail={"error_code": "script_git.revert_unavailable", "message": str(exc)}) from exc
+
+    current_graph = _serialize_script_graph(repository.list_graph_nodes(), repository.list_graph_edges())
+    current_script_git = _latest_script_git_state(service.list_workflows(), service)
+    restored_script_git = event_payload.get("previous_script_git")
+    if restored_script_git is not None and not isinstance(restored_script_git, dict):
+        raise HTTPException(status_code=409, detail={"error_code": "script_git.revert_unavailable", "message": "previous Git metadata is malformed"})
+
+    service.replace_script_graph(nodes, edges)
+    restored_count = sum(1 for node in nodes if node.kind == GraphNodeKind.scene)
+    restored_beats = sum(1 for node in nodes if node.kind in {GraphNodeKind.beat, GraphNodeKind.story_beat})
+    event = service.append_workflow_event(
+        workflow_id,
+        "script.git.reverted",
+        request.actor,
+        {
+            "script_git": restored_script_git,
+            "previous_script_git": current_script_git,
+            "previous_graph": current_graph,
+            "restored_from": event_payload.get("script_git"),
+            "scene_count": restored_count,
+            "beat_count": restored_beats,
+        },
+        request.runtime_mode,
+        request.actor,
+    )
+    return {
+        "script_git": restored_script_git,
+        "event": event,
+        "graph_nodes": nodes,
+        "graph_edges": edges,
+        "provenance": event.provenance,
+        "restored_scene_count": restored_count,
+        "restored_beat_count": restored_beats,
     }
 
 
@@ -1049,8 +1165,8 @@ def delivery_provenance(delivery_id: str):
         "delivery_id": delivery_id,
         "record": record,
         "path": [
-            {"step": "revision", "label": "V5 / SC 47", "source": service.last_source},
-            {"step": "scene", "label": "SC 47 / SCRIPT", "source": "computed"},
+            {"step": "revision", "label": "V5 / TITANIC / COLLISION", "source": service.last_source},
+            {"step": "scene", "label": "SC 17 / SCRIPT", "source": "computed"},
             {"step": "decision", "label": "HUMAN REVIEW", "source": "computed"},
             {"step": "record", "label": delivery_id, "source": record.provenance.source},
         ],
@@ -1085,6 +1201,7 @@ def plan() -> PlanSummary:
             "GET /api/v1/workspace?filmId=demo-feature&revisionId=rev-05",
             "POST /api/v1/script-git/load",
             "POST /api/v1/script-git/apply",
+            "POST /api/v1/script-git/revert",
             "GET /api/v1/impact",
             "GET /api/v1/graph/impact",
             "GET /api/v1/runtime",

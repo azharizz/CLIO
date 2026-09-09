@@ -126,6 +126,8 @@ export interface GraphNodeData {
   count?: number | undefined
   /** Scope keeps a film-wide summary distinct from the selected trace. */
   scope?: 'film' | 'revision' | 'focus' | 'beat' | 'decision' | 'release' | undefined
+  /** A short-lived, display-only focus state from the latest agent result. */
+  agentRelated?: boolean | undefined
 }
 
 export interface GraphPosition {

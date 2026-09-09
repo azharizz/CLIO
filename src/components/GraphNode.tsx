@@ -38,18 +38,20 @@ export function GraphNode({ id, data, selected = false }: NodeProps) {
     frame.muted ? 'is-muted' : '',
     frame.pathActive ? 'is-path-active' : '',
     frame.split ? 'is-split' : '',
+    frame.agentRelated ? 'is-agent-related' : '',
   ].filter(Boolean).join(' ')
 
   return (
     <article
       className={className}
-      aria-label={`${role}: ${sceneMark} ${frame.title}${timing ? `, ${timing}` : ''}${frame.narrationText ? `, narration ${frame.narrationText}` : ''}`}
+      aria-label={`${role}: ${sceneMark} ${frame.title}${timing ? `, ${timing}` : ''}${frame.narrationText ? `, narration ${frame.narrationText}` : ''}${frame.agentRelated ? ', related node highlighted' : ''}`}
       title={`${role} · ${frame.scope ?? 'focus'}`}
       data-node-kind={frame.kind}
       data-node-id={id}
       data-node-scope={frame.scope ?? 'focus'}
       data-node-entity={frame.entityType ?? frame.kind}
       data-parent-scene={frame.parentSceneId ?? ''}
+      data-agent-related={frame.agentRelated ? 'true' : 'false'}
     >
       <Handle type="target" position={Position.Left} className="fg-handle" />
       <Handle type="source" position={Position.Right} className="fg-handle" />

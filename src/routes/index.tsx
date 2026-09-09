@@ -12,10 +12,10 @@ import '@xyflow/react/dist/style.css'
 import { GraphNode } from '../components/GraphNode'
 import { OrthogonalEdge } from '../components/OrthogonalEdge'
 import { addEvent, type StreamEvent } from '../components/AgentStream'
+import { LandingPage } from '../components/LandingPage'
 import { NodeEditorOverlay } from '../components/NodeEditorOverlay'
 import { OnboardingOverlay } from '../components/OnboardingOverlay'
 import { ScriptGitOverlay } from '../components/ScriptGitOverlay'
-import { loadWorkspaceSnapshot } from '../lib/server-functions'
 import type {
   AgentEvent,
   GraphNodeDraft,
@@ -27,8 +27,10 @@ import type {
   WorkspaceSnapshot,
 } from '../lib/contracts'
 import { buildFilmMap } from '../lib/film-map'
+import { nodeIdsMentionedInAgentEvidence } from '../lib/agent-highlights'
 import {
   createAgentEventStream,
+  createFallbackSnapshot,
   createLocalGraphNode,
   deleteLocalGraphNode,
   downstreamFor,
@@ -36,13 +38,21 @@ import {
   lineageFor,
   updateLocalGraphNode,
 } from '../lib/workspace'
+import {
+  formatWorkspaceCacheAge,
+  invalidateWorkspaceCache,
+  readWorkspaceCache,
+  writeWorkspaceCache,
+} from '../lib/workspace-cache'
 
 const nodeTypes = { filmFrame: GraphNode }
 const edgeTypes = { orthogonal: OrthogonalEdge }
 type FlowNode = Node<Record<string, unknown>>
 type FlowEdge = Edge<Record<string, unknown>>
 type AgentAction = 'inspect' | 'edit' | 'remove' | 'add'
+type WorkspaceSyncState = 'loading' | 'refreshing' | 'ready' | 'offline'
 const ONBOARDING_STORAGE_KEY = 'clio-onboarding-complete'
+const AGENT_RELATED_HIGHLIGHT_MS = 10_000
 
 const AGENT_ACTIONS: Array<{ id: AgentAction; label: string; short: string }> = [
   { id: 'inspect', label: 'EXPLAIN', short: 'PATH' },
@@ -52,14 +62,12 @@ const AGENT_ACTIONS: Array<{ id: AgentAction; label: string; short: string }> = 
 ]
 
 export const Route = createFileRoute('/')({
-  loader: () => loadWorkspaceSnapshot(),
-  component: RootWorkspace,
+  component: RootLanding,
   head: () => ({ meta: [{ title: 'CLIO — Continuity & Lineage Intelligence Operator' }] }),
 })
 
-function RootWorkspace() {
-  const loaderData = Route.useLoaderData()
-  return <ClioWorkspace loaderData={loaderData} />
+function RootLanding() {
+  return <LandingPage />
 }
 
 function phaseFor(node: WorkspaceNode | undefined): WorkflowPhase {
@@ -96,6 +104,25 @@ function ProvenanceTag({ value }: { value: Provenance | undefined }) {
   )
 }
 
+function WorkspaceSkeleton() {
+  return (
+    <div className="fg-workspace-skeleton" data-testid="workspace-skeleton" role="status" aria-live="polite" aria-label="Loading script map">
+      <div className="fg-workspace-skeleton__head">
+        <span className="fg-label">LOADING MAP</span>
+        <span className="fg-micro">REMOTE READ</span>
+      </div>
+      <div className="fg-workspace-skeleton__frames" aria-hidden="true">
+        <span className="fg-workspace-skeleton__frame fg-workspace-skeleton__frame--wide" />
+        <span className="fg-workspace-skeleton__frame" />
+        <span className="fg-workspace-skeleton__frame fg-workspace-skeleton__frame--low" />
+        <span className="fg-workspace-skeleton__frame fg-workspace-skeleton__frame--wide" />
+        <span className="fg-workspace-skeleton__frame" />
+      </div>
+      <div className="fg-workspace-skeleton__line" aria-hidden="true" />
+    </div>
+  )
+}
+
 function KeyValue({ label, value }: { label: string; value: string }) {
   return <div><span>{label}</span><strong>{value}</strong></div>
 }
@@ -115,9 +142,12 @@ function AgentOverlay({
   events,
   running,
   runtimeMode,
+  relatedNodeCount,
+  relatedNodesActive,
   onAction,
   onPrompt,
   onRun,
+  onReplayRelatedNodes,
   onClose,
 }: {
   node: WorkspaceNode | undefined
@@ -126,9 +156,12 @@ function AgentOverlay({
   events: StreamEvent[]
   running: boolean
   runtimeMode: 'simulation' | 'live'
+  relatedNodeCount: number
+  relatedNodesActive: boolean
   onAction: (action: AgentAction) => void
   onPrompt: (prompt: string) => void
   onRun: () => void
+  onReplayRelatedNodes: () => void
   onClose: () => void
 }) {
   const graphEvent = events.find((event) => event.stage === 'graph')
@@ -178,6 +211,14 @@ function AgentOverlay({
             <span>{event.detail}</span>
           </div>
         ))}
+        {relatedNodeCount > 0 ? (
+          <div className="fg-agent-related" role="status" aria-live="polite">
+            <span>{relatedNodesActive ? `RELATED NODES / ${relatedNodeCount} · HIGHLIGHTING` : `RELATED NODES / ${relatedNodeCount} · HIGHLIGHT ENDED`}</span>
+            <button type="button" onClick={onReplayRelatedNodes} aria-label="Show related nodes again">
+              SHOW RELATED NODES AGAIN
+            </button>
+          </div>
+        ) : null}
       </div>
     </section>
   )
@@ -319,8 +360,14 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
   const [viewMode, setViewMode] = useState<GraphViewMode>('overview')
   const [traceActive, setTraceActive] = useState(true)
   const [feed, setFeed] = useState<StreamEvent[]>([])
+  /** Agent output keeps its related node set for replay after the glow ends. */
+  const [relatedNodeIds, setRelatedNodeIds] = useState<Set<string>>(() => new Set())
+  const [highlightedNodeIds, setHighlightedNodeIds] = useState<Set<string>>(() => new Set())
   const [agentRunning, setAgentRunning] = useState(false)
   const [hydrated, setHydrated] = useState(false)
+  const [syncState, setSyncState] = useState<WorkspaceSyncState>('loading')
+  const [cacheAgeMs, setCacheAgeMs] = useState<number | null>(null)
+  const [syncError, setSyncError] = useState('')
   const [indexOpen, setIndexOpen] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(false)
   const [agentOpen, setAgentOpen] = useState(false)
@@ -341,12 +388,16 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
   const flowRef = useRef<ReactFlowInstance | null>(null)
   const streamRef = useRef<EventSource | null>(null)
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const relatedHighlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     setSnapshot(loaderData)
     setSelectedNodeId(loaderData.selectedNodeId)
     setPhase(phaseFor(loaderData.graph.nodes.find((node) => node.id === loaderData.selectedNodeId)))
     setExpandedSceneIds(new Set())
+    setSyncState(loaderData.dataSource.source === 'direct_clickhouse' || loaderData.dataSource.source === 'clickhouse_mcp' ? 'ready' : 'loading')
+    setCacheAgeMs(null)
+    setSyncError('')
   }, [loaderData])
 
   useEffect(() => {
@@ -359,6 +410,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
     return () => {
       streamRef.current?.close()
       if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current)
+      if (relatedHighlightTimerRef.current) clearTimeout(relatedHighlightTimerRef.current)
     }
   }, [])
 
@@ -371,16 +423,110 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
     [snapshot, selectedNode?.id],
   )
 
+  const expandRelatedParents = useCallback((ids: Iterable<string>) => {
+    const related = new Set(ids)
+    const parentIds = snapshot.graph.nodes
+      .filter((node) => node.data.kind === 'beat' && related.has(node.id) && node.data.parentSceneId)
+      .map((node) => node.data.parentSceneId!)
+    if (parentIds.length === 0) return
+    setExpandedSceneIds((current) => {
+      const next = new Set(current)
+      parentIds.forEach((id) => next.add(id))
+      return next
+    })
+  }, [snapshot.graph.nodes])
+
+  const showRelatedNodes = useCallback((ids: Iterable<string>) => {
+    const nextIds = [...new Set(ids)].filter((id) => snapshot.graph.nodes.some((node) => node.id === id))
+    if (nextIds.length === 0) return
+    expandRelatedParents(nextIds)
+    setRelatedNodeIds((current) => {
+      const next = new Set(current)
+      nextIds.forEach((id) => next.add(id))
+      return next
+    })
+    setHighlightedNodeIds((current) => {
+      const next = new Set(current)
+      nextIds.forEach((id) => next.add(id))
+      return next
+    })
+    if (relatedHighlightTimerRef.current) clearTimeout(relatedHighlightTimerRef.current)
+    relatedHighlightTimerRef.current = setTimeout(() => {
+      setHighlightedNodeIds(new Set())
+      relatedHighlightTimerRef.current = null
+    }, AGENT_RELATED_HIGHLIGHT_MS)
+  }, [expandRelatedParents, snapshot.graph.nodes])
+
+  const highlightAgentEvidence = useCallback((...evidence: unknown[]) => {
+    const ids = nodeIdsMentionedInAgentEvidence(snapshot, ...evidence)
+    showRelatedNodes(ids)
+  }, [showRelatedNodes, snapshot])
+
+  const clearAgentEvidence = useCallback(() => {
+    if (relatedHighlightTimerRef.current) clearTimeout(relatedHighlightTimerRef.current)
+    relatedHighlightTimerRef.current = null
+    setRelatedNodeIds(new Set())
+    setHighlightedNodeIds(new Set())
+  }, [])
+
+  const replayRelatedNodes = useCallback(() => {
+    showRelatedNodes(relatedNodeIds)
+  }, [relatedNodeIds, showRelatedNodes])
+
   const finishOnboarding = useCallback(() => {
     try { window.localStorage.setItem(ONBOARDING_STORAGE_KEY, '1') } catch { /* private browsing */ }
     setOnboardingOpen(false)
   }, [])
 
   const freshWorkspace = useCallback(async (): Promise<WorkspaceSnapshot> => {
-    const response = await fetch('/api/workspace?filmId=demo-feature&revisionId=rev-05', { headers: { Accept: 'application/json' } })
+    const response = await fetch('/api/workspace?filmId=demo-feature&revisionId=rev-05', {
+      // Every explicit refresh bypasses the server/browser cache. The
+      // previous snapshot is already being shown by the SWR layer.
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+        'Cache-Control': 'no-cache',
+        'X-CLIO-Refresh': '1',
+      },
+    })
     if (!response.ok) throw new Error(`Workspace refresh failed (${response.status})`)
-    return (await response.json()) as WorkspaceSnapshot
+    const refreshed = (await response.json()) as WorkspaceSnapshot
+    writeWorkspaceCache(refreshed)
+    return refreshed
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const cached = readWorkspaceCache('demo-feature', 'rev-05')
+    if (cached) {
+      setSnapshot(cached.snapshot)
+      setSelectedNodeId(cached.snapshot.selectedNodeId)
+      setPhase(phaseFor(cached.snapshot.graph.nodes.find((node) => node.id === cached.snapshot.selectedNodeId)))
+      setCacheAgeMs(cached.ageMs)
+      setSyncState('refreshing')
+    } else {
+      setSyncState('loading')
+      setCacheAgeMs(null)
+    }
+
+    void freshWorkspace()
+      .then((refreshed) => {
+        if (cancelled) return
+        setSnapshot(refreshed)
+        setSelectedNodeId(refreshed.selectedNodeId)
+        setPhase(phaseFor(refreshed.graph.nodes.find((node) => node.id === refreshed.selectedNodeId)))
+        setCacheAgeMs(0)
+        setSyncError(refreshed.providerError?.message ?? '')
+        setSyncState(refreshed.providerError ? 'offline' : 'ready')
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        setSyncState('offline')
+        setSyncError(error instanceof Error ? error.message : 'Workspace refresh failed')
+      })
+
+    return () => { cancelled = true }
+  }, [freshWorkspace])
 
   const selectNode = useCallback((node: WorkspaceNode) => {
     finishOnboarding()
@@ -433,6 +579,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
 
   const appliedScriptGit = useCallback(async () => {
     try {
+      invalidateWorkspaceCache()
       const refreshed = await freshWorkspace()
       setSnapshot(refreshed)
       setSelectedNodeId(refreshed.selectedNodeId)
@@ -506,6 +653,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
         throw new Error(String(detail.message ?? payload.message ?? `Node request failed (${response.status})`))
       }
       mutationSucceeded = true
+      invalidateWorkspaceCache()
       // The same-origin route can complete against the in-process mirror when
       // FastAPI is offline. Re-apply that mutation to this browser state
       // instead of immediately asking the unavailable backend for a refresh.
@@ -537,6 +685,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
       // Keep the browser useful when FastAPI is down: the same validation and
       // append-only event mirror powers the local fallback route.
       try {
+        invalidateWorkspaceCache()
         const local = editorMode === 'create'
           ? createLocalGraphNode(snapshot, draft)
           : updateLocalGraphNode(snapshot, targetId ?? '', draft)
@@ -575,11 +724,13 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
         throw new Error(String(detail.message ?? `Delete failed (${response.status})`))
       }
       if (payload.local === true) {
+        invalidateWorkspaceCache()
         const local = deleteLocalGraphNode(snapshot, target.id)
         setSnapshot(local)
         setSelectedNodeId(local.selectedNodeId)
         return
       }
+      invalidateWorkspaceCache()
       const refreshed = await freshWorkspace()
       setSnapshot(refreshed)
       setSelectedNodeId(refreshed.selectedNodeId)
@@ -591,6 +742,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
         return
       }
       try {
+        invalidateWorkspaceCache()
         const local = deleteLocalGraphNode(snapshot, target.id)
         setSnapshot(local)
         setSelectedNodeId(local.selectedNodeId)
@@ -624,6 +776,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
         : undefined,
       muted: viewMode === 'trace' && traceActive && lineage.size > 0 && !lineage.has(node.id),
       pathActive: viewMode === 'trace' && traceActive && lineage.has(node.id),
+      agentRelated: highlightedNodeIds.has(node.id),
     } as Record<string, unknown>,
   }))
 
@@ -652,14 +805,16 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
       prompt: agentPrompt,
       ...(selectedNode?.id ? { focusNode: selectedNode.id } : {}),
     }))
+    highlightAgentEvidence(...events.map((event) => event.detail))
     setFeed((current) => events.reduce((items, event) => addEvent(items, event), current))
-  }, [agentAction, agentPrompt, selectedNode?.id, snapshot])
+  }, [agentAction, agentPrompt, highlightAgentEvidence, selectedNode?.id, snapshot])
 
   const runAgent = async () => {
     setPhase('agent')
     setAgentOpen(true)
     setAgentRunning(true)
     setFeed([])
+    clearAgentEvidence()
     streamRef.current?.close()
     if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current)
     let runId = ''
@@ -677,7 +832,10 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
           runtime_mode: runtimeMode,
         }),
       })
-      if (response.ok) runId = ((await response.json()) as { id?: string }).id ?? ''
+      if (response.ok) {
+        runId = ((await response.json()) as { id?: string }).id ?? ''
+        invalidateWorkspaceCache()
+      }
     } catch {
       // The client-side stream fallback below remains usable without Python.
     }
@@ -693,7 +851,10 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
       try {
         const payload = JSON.parse((event as MessageEvent<string>).data) as Record<string, unknown>
         const normalized = normalizeStreamPayload(payload, event.type, runId)
-        if (normalized) setFeed((current) => addEvent(current, normalized))
+        if (normalized) {
+          highlightAgentEvidence(payload, normalized.detail)
+          setFeed((current) => addEvent(current, normalized))
+        }
       } catch {
         // Ignore one malformed transport frame; the local fallback protects the evidence view.
       }
@@ -713,11 +874,12 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
       finish()
     }
     fallbackTimerRef.current = setTimeout(() => {
+      const fallbackEvents = createAgentEventStream(snapshot, { action: agentAction, prompt: agentPrompt, ...(selectedNode?.id ? { focusNode: selectedNode.id } : {}) })
+        .map(toStreamEvent)
+      highlightAgentEvidence(...fallbackEvents.map((event) => event.detail))
       setFeed((current) => {
         if (current.some((event) => event.stage === 'critic')) return current
-        return createAgentEventStream(snapshot, { action: agentAction, prompt: agentPrompt, ...(selectedNode?.id ? { focusNode: selectedNode.id } : {}) })
-          .map(toStreamEvent)
-          .reduce((items, event) => addEvent(items, event), current)
+        return fallbackEvents.reduce((items, event) => addEvent(items, event), current)
       })
       finish()
     }, runtimeMode === 'live' ? 50000 : 3500)
@@ -747,9 +909,24 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
 
   const sourceLabel = snapshot.dataSource.label
   const sourceClass = snapshot.dataSource.source
+  const syncLabel = syncState === 'loading'
+    ? 'LOADING'
+    : syncState === 'refreshing'
+      ? `SYNCING${cacheAgeMs !== null ? ` · ${formatWorkspaceCacheAge(cacheAgeMs)}` : ''}`
+      : syncState === 'offline'
+        ? 'CACHED'
+        : 'SYNCED'
 
   return (
-    <div className="fg-app fg-script-app" data-testid="workspace" data-hydrated={hydrated ? 'true' : 'false'} onKeyDown={handleKeyDown} tabIndex={-1}>
+    <div
+      className="fg-app fg-script-app"
+      data-testid="workspace"
+      data-hydrated={hydrated ? 'true' : 'false'}
+      data-sync-state={syncState}
+      aria-busy={syncState === 'loading' || syncState === 'refreshing'}
+      onKeyDown={handleKeyDown}
+      tabIndex={-1}
+    >
       <header className="fg-topbar">
         <div className="fg-brand-lockup">
           <span className="fg-brand">CLIO</span>
@@ -785,15 +962,16 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
           <button type="button" className="fg-top-action fg-top-action--accent" onClick={() => openCreateNode('scene')} aria-label="Create new scene">NEW</button>
         </div>
         <div className="fg-topmeta">
+          <span className={`fg-sync-state fg-sync-state--${syncState}`} data-testid="workspace-sync" role="status" title={syncError || undefined}>{syncLabel}</span>
           <span className="fg-chip fg-chip--bright">LOCAL DEMO</span>
           <span className={`fg-chip fg-chip--${sourceClass}`}>{sourceLabel}</span>
           <span className="fg-chip fg-chip--simulation">{snapshot.runtimeMode === 'live' ? 'LIVE PROVIDER' : 'LOCAL SIMULATION'}</span>
         </div>
       </header>
 
-      <div className="fg-changebar" aria-label="Active revision V5: scene 47 changes from restaurant to moving car">
+      <div className="fg-changebar" aria-label={`Active revision ${snapshot.revisionLabel}: ${snapshot.changedScene}`}>
         <span className="fg-label">ACTIVE</span>
-        <strong>V5 / SC 47 · RESTAURANT → MOVING CAR</strong>
+        <strong>{snapshot.revisionLabel} · {snapshot.changedScene}</strong>
           <span className="fg-changebar__right">
           <span>{snapshot.sceneCount} SCENES · {snapshot.beatCount} BEATS</span>
           <span className="fg-total-clock">{formatClock(snapshot.totalDurationSeconds)}</span>
@@ -838,6 +1016,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
               <button type="button" onClick={() => flowRef.current?.fitView({ duration: 0, padding: 0.1 })}>FIT</button>
             </div>
           </div>
+          {syncState === 'loading' ? <WorkspaceSkeleton /> : null}
           <ReactFlowProvider>
             <ReactFlow
               nodes={flowNodes}
@@ -903,9 +1082,12 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
           events={feed}
           running={agentRunning}
           runtimeMode={snapshot.runtimeMode ?? 'simulation'}
+          relatedNodeCount={relatedNodeIds.size}
+          relatedNodesActive={highlightedNodeIds.size > 0}
           onAction={chooseAgentAction}
           onPrompt={setAgentPrompt}
           onRun={() => void runAgent()}
+          onReplayRelatedNodes={replayRelatedNodes}
           onClose={() => setAgentOpen(false)}
         />
       ) : null}
@@ -961,7 +1143,7 @@ function normalizeStreamPayload(payload: Record<string, unknown>, eventType: str
     narrative: 'SCRIPT / READ',
     graph: 'GRAPH / TRACED',
     analytics: action === 'remove' ? 'TIME / REMOVED' : 'TIME / COMPUTED',
-    revision: 'REVISION / V5',
+    revision: 'REVISION / V5 · TITANIC',
     critic: 'CRITIC / PROPOSE',
   }
   const detail = typeof payload.detail === 'string'

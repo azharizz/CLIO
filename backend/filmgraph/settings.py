@@ -14,6 +14,14 @@ class ClickHouseSettings:
     password: str
     database: str
     secure: bool
+    # ``local`` targets the Docker service; ``cloud`` targets ClickHouse Cloud.
+    # The remaining flags make first-run bootstrap explicit and keep demo
+    # reset operations out of a shared/remote database.
+    database_mode: str = "local"
+    bootstrap_schema: bool = True
+    create_database: bool = True
+    seed_demo: bool = True
+    allow_demo_reset: bool = False
 
 
 @dataclass(frozen=True)
@@ -39,19 +47,58 @@ def _env(primary: str, legacy: str, default: Optional[str] = None) -> Optional[s
     return os.getenv(primary) or os.getenv(legacy) or default
 
 
+def _env_bool(primary: str, legacy: str, default: bool) -> bool:
+    value = _env(primary, legacy)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def load_settings() -> AppSettings:
     base_dir = Path(__file__).resolve().parents[2]
     _load_dotenv(base_dir / ".env")
     clickhouse_host = _env("CLIO_CLICKHOUSE_HOST", "FILMGRAPH_CLICKHOUSE_HOST")
     clickhouse = None
     if clickhouse_host:
+        clickhouse_port = int(_env("CLIO_CLICKHOUSE_PORT", "FILMGRAPH_CLICKHOUSE_PORT", "8123") or "8123")
+        clickhouse_database = _env("CLIO_CLICKHOUSE_DATABASE", "FILMGRAPH_CLICKHOUSE_DATABASE", "filmgraph") or "filmgraph"
+        configured_database_mode = _env("CLIO_DATABASE_MODE", "FILMGRAPH_DATABASE_MODE")
+        # Cloud endpoints conventionally use 8443 and the clickhouse.cloud
+        # hostname.  The explicit variable always wins, but this keeps an
+        # older Cloud .env safe even before it is updated with the new flags.
+        if configured_database_mode:
+            database_mode = configured_database_mode.strip().lower()
+        elif clickhouse_port == 8443 or ".clickhouse.cloud" in clickhouse_host.lower():
+            database_mode = "cloud"
+        else:
+            database_mode = "local"
+        if database_mode not in {"local", "cloud"}:
+            raise ValueError("CLIO_DATABASE_MODE must be 'local' or 'cloud'")
+        secure_default = "true" if database_mode == "cloud" else "false"
         clickhouse = ClickHouseSettings(
             host=clickhouse_host,
-            port=int(_env("CLIO_CLICKHOUSE_PORT", "FILMGRAPH_CLICKHOUSE_PORT", "8123") or "8123"),
+            port=clickhouse_port,
             username=_env("CLIO_CLICKHOUSE_USER", "FILMGRAPH_CLICKHOUSE_USER", "default") or "default",
             password=_env("CLIO_CLICKHOUSE_PASSWORD", "FILMGRAPH_CLICKHOUSE_PASSWORD", "") or "",
-            database=_env("CLIO_CLICKHOUSE_DATABASE", "FILMGRAPH_CLICKHOUSE_DATABASE", "filmgraph") or "filmgraph",
-            secure=(_env("CLIO_CLICKHOUSE_SECURE", "FILMGRAPH_CLICKHOUSE_SECURE", "false") or "false").lower() == "true",
+            database=clickhouse_database,
+            secure=_env_bool("CLIO_CLICKHOUSE_SECURE", "FILMGRAPH_CLICKHOUSE_SECURE", secure_default == "true"),
+            database_mode=database_mode,
+            bootstrap_schema=_env_bool("CLIO_BOOTSTRAP_SCHEMA", "FILMGRAPH_BOOTSTRAP_SCHEMA", True),
+            create_database=_env_bool(
+                "CLIO_CREATE_DATABASE",
+                "FILMGRAPH_CREATE_DATABASE",
+                database_mode == "local",
+            ),
+            seed_demo=_env_bool(
+                "CLIO_SEED_DEMO",
+                "FILMGRAPH_SEED_DEMO",
+                database_mode == "local",
+            ),
+            allow_demo_reset=_env_bool(
+                "CLIO_ALLOW_DEMO_RESET",
+                "FILMGRAPH_ALLOW_DEMO_RESET",
+                False,
+            ),
         )
 
     provider_key = os.getenv("AGENT_PROVIDER_API_KEY")

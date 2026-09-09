@@ -7,7 +7,7 @@ export const Route = createFileRoute('/api/runtime/proposals')({
     handlers: {
       POST: async ({ request }) => {
         const body = (await request.json().catch(() => ({}))) as { proposalId?: string }
-        const proposalId = body.proposalId ?? 'cut-sc47'
+        const proposalId = body.proposalId ?? 'cut-sc17'
         let remoteSource = 'local-simulation'
         try {
           const workspace = await backendFetch<{ workflows?: Array<{ id?: string }> }>('/workspace?filmId=demo-feature&revisionId=rev-05')

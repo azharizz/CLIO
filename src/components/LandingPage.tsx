@@ -7,30 +7,33 @@ type Item = { id: string; label: string; row: number; signal: Signal }
 const columns: Item[][] = [
   [{ id: 'v5', label: 'V5', row: 0, signal: 'breaking' }],
   [
-    { id: '47', label: '47', row: -1, signal: 'breaking' },
-    { id: 'bt', label: 'BT', row: 0, signal: 'breaking' },
-    { id: '48', label: '48', row: 1, signal: 'breaking' },
+    { id: 'sc01', label: 'SC01', row: -1, signal: 'traced' },
+    { id: 'sc17', label: 'SC17', row: 0, signal: 'breaking' },
+    { id: 'sc25', label: 'SC25', row: 1, signal: 'traced' },
   ],
   [
-    { id: 'd12', label: 'D12', row: -1, signal: 'breaking' },
-    { id: 'veh', label: 'VEH', row: 1, signal: 'breaking' },
+    { id: 'b01', label: 'B01', row: -1, signal: 'breaking' },
+    { id: 'b05', label: 'B05', row: 0, signal: 'breaking' },
+    { id: 'b25', label: 'B25', row: 1, signal: 'traced' },
   ],
   [
-    { id: '47b', label: '47B', row: 0, signal: 'breaking' },
-    { id: 'cam', label: 'CAM', row: 1, signal: 'breaking' },
+    { id: 'sc18', label: 'SC18', row: -1, signal: 'breaking' },
+    { id: 'sc19', label: 'SC19', row: 0, signal: 'breaking' },
+    { id: 'sc24', label: 'SC24', row: 1, signal: 'traced' },
   ],
   [
-    { id: 'r08', label: 'R08', row: -1, signal: 'traced' },
-    { id: '142', label: '142', row: 0, signal: 'traced' },
+    { id: 'trace', label: 'TRACE', row: -1, signal: 'breaking' },
+    { id: 'impact', label: 'IMPACT', row: 0, signal: 'breaking' },
+    { id: 'time', label: 'TIME', row: 1, signal: 'traced' },
   ],
-  [{ id: 'pic', label: 'PIC', row: 0, signal: 'traced' }],
+  [{ id: 'decision', label: 'DECISION', row: 0, signal: 'traced' }],
   [
-    { id: 'sub', label: 'SUB', row: -1, signal: 'traced' },
-    { id: 'dlv', label: 'DLV', row: 1, signal: 'traced' },
+    { id: 'map', label: 'MAP', row: -1, signal: 'traced' },
+    { id: 'clio', label: 'CLIO', row: 1, signal: 'traced' },
   ],
 ]
 
-const stages = ['Script', 'Scene', 'Shoot', 'Shot', 'Edit', 'Master', 'Delivery']
+const stages = ['SOURCE', 'SCENES', 'BEATS', 'IMPACT', 'DECISION', 'TRACE', 'CLIO']
 const NS = 'http://www.w3.org/2000/svg'
 
 // The landing wordmark uses the same draw → pulse → reset language as the
@@ -138,7 +141,7 @@ function LandingGraph({ onLayout, svgRef }: { onLayout: () => void; svgRef: RefO
       className="fg-proto-graph"
       viewBox={`0 0 ${w} ${h}`}
       role="img"
-      aria-label="CLIO dependency graph from revision V5 through delivery"
+      aria-label="CLIO dependency graph from revision V5 through editorial decision"
     >
       <title>CLIO revision V5 dependency signal</title>
       <g>
@@ -353,7 +356,7 @@ const timecode = (frame: number) => {
 }
 
 export function LandingPage() {
-  const [frame, setFrame] = useState(2 * 60 * 60 * 24 + 14 * 60 * 24 + 7 * 24 + 12)
+  const [frame, setFrame] = useState(0)
   const [active, setActive] = useState(-1)
   const [layoutVersion, setLayoutVersion] = useState(0)
   const graphRef = useRef<SVGSVGElement | null>(null)

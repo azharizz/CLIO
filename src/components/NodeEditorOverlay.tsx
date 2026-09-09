@@ -22,7 +22,8 @@ function draftFor(props: Props): GraphNodeDraft {
   const parent = node?.data.parentSceneId ?? props.defaultParentId ?? props.scenes[props.scenes.length - 1]?.id
   // A new child beat should inherit the selected scene's time envelope. The
   // previous implementation used the last scene in the film, which opened an
-  // invalid 13:00→14:00 beat for SC 47 (07:36→09:48).
+  // Timing validation remains explicit for long-form scenes such as Titanic
+  // SC 17, whose beats must stay inside 01:50:00→01:58:30.
   const parentScene = kind === 'beat' && parent
     ? props.scenes.find((scene) => scene.id === parent)
     : undefined

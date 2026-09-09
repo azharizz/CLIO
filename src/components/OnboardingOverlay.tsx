@@ -11,7 +11,7 @@ const steps = [
     mark: '02 / TRACE',
     title: 'OPEN THE COMPLEX PARTS',
     body: 'Long scenes split into timed child beats. Select a beat to see the exact text and what it changes downstream.',
-    signal: 'SC 47 → B01 B02 B03 B04',
+    signal: 'SC 17 → B01 B02 B03 B04 B05',
   },
   {
     mark: '03 / CONTROL',
@@ -32,7 +32,7 @@ export function OnboardingOverlay({ onDone, onCreate }: { onDone: () => void; on
         <header className="fg-onboarding__head">
           <div>
             <span className="fg-label">CLIO / FIRST RUN</span>
-            <span className="fg-micro">LOCAL DEMO · SCRIPT MAP</span>
+            <span className="fg-micro">LOCAL DEMO · TITANIC · SCRIPT MAP</span>
           </div>
           <button type="button" className="fg-overlay-close" onClick={finish} aria-label="Skip onboarding">×</button>
         </header>

@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('opens the complete timed script map', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/workspace')
   await expect(page).toHaveTitle('CLIO — Continuity & Lineage Intelligence Operator')
   await expect(page.getByTestId('workspace')).toBeVisible()
   await expect(page.getByTestId('workspace')).toHaveAttribute('data-hydrated', 'true')
@@ -16,10 +16,10 @@ test('opens the complete timed script map', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'CLIO onboarding' })).toBeVisible()
   await expect(page.getByText('LOCAL DEMO', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('LOCAL SIMULATION', { exact: true }).first()).toBeVisible()
-  await expect(page.locator('[data-node-kind="scene"]')).toHaveCount(8)
-  await expect(page.getByText('16  BEATS', { exact: false }).first()).toBeVisible()
+  await expect(page.locator('[data-node-kind="scene"]')).toHaveCount(25)
+  await expect(page.getByText('125  BEATS', { exact: false }).first()).toBeVisible()
   await expect(page.locator('[data-node-kind="revision"]')).toHaveCount(1)
-  await expect(page.getByText('13:00', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('03:15:00', { exact: true }).first()).toBeVisible()
   await expect(page.getByText(/MASTER OUTPUT|LANGUAGE SET|DELIVERY MATRIX/i)).toHaveCount(0)
 })
 
@@ -28,18 +28,18 @@ test('selects a scene and runs explain/edit/remove/add questions', async ({ page
   await expect(page.getByTestId('workspace')).toHaveAttribute('data-hydrated', 'true')
 
   await page.getByRole('button', { name: 'SCENES', exact: true }).click()
-  await page.getByRole('button', { name: /SC 47/ }).click()
+  await page.getByRole('button', { name: /SC 17/ }).click()
   await expect(page.getByRole('complementary', { name: 'Context inspector' })).toBeVisible()
   await expect(page.getByText('SCRIPT TEXT', { exact: true })).toBeVisible()
   await expect(page.getByText('NARRATION', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'SHOW MAP', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'SHOW MAP', exact: true }).click()
-  await expect(page.locator('[data-node-kind="beat"]')).toHaveCount(4)
+  await expect(page.locator('[data-node-kind="beat"]')).toHaveCount(5)
   await page.getByRole('button', { name: 'HIDE MAP', exact: true }).click()
   await expect(page.locator('[data-node-kind="beat"]')).toHaveCount(0)
   const identity = page.getByRole('region', { name: 'Selected node identity' })
-  await expect(identity.getByText('07:36 → 09:48', { exact: true })).toBeVisible()
-  await expect(identity.getByText('02:12', { exact: true })).toBeVisible()
+  await expect(identity.getByText('01:50:00 → 01:58:30', { exact: true })).toBeVisible()
+  await expect(identity.getByText('08:30', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: /ASK AGENT/i }).click()
   await expect(page.getByRole('dialog', { name: 'CLIO agent' })).toBeVisible()
@@ -60,7 +60,7 @@ test('selects a scene and runs explain/edit/remove/add questions', async ({ page
 
 test('supports tracing, keyboard selection, reduced motion, and mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto('/workspace')
   await expect(page.getByTestId('workspace')).toHaveAttribute('data-hydrated', 'true')
   await expect(page.evaluate(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)).resolves.toBeTruthy()
   await page.getByRole('button', { name: 'TRACE PATH', exact: true }).click()
@@ -72,7 +72,7 @@ test('supports tracing, keyboard selection, reduced motion, and mobile width', a
 })
 
 test('onboards an editor and supports scene CRUD in the workspace', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/workspace')
   const onboarding = page.getByTestId('onboarding')
   await expect(onboarding).toBeVisible()
   await onboarding.getByRole('button', { name: 'NEXT', exact: true }).click()
@@ -90,7 +90,7 @@ test('onboards an editor and supports scene CRUD in the workspace', async ({ pag
   await editor.getByLabel('START (SEC)', { exact: true }).fill('780')
   await editor.getByLabel('END (SEC)', { exact: true }).fill('840')
   await editor.getByRole('button', { name: 'CREATE NODE', exact: true }).click()
-  await expect(page.locator('[data-node-kind="scene"]')).toHaveCount(9)
+  await expect(page.locator('[data-node-kind="scene"]')).toHaveCount(26)
   await expect(page.getByRole('complementary', { name: 'Context inspector' }).getByRole('heading', { name: 'INT. TEST ROOM — NIGHT', exact: true })).toBeVisible()
 
   const inspector = page.getByRole('complementary', { name: 'Context inspector' })
@@ -107,6 +107,6 @@ test('onboards an editor and supports scene CRUD in the workspace', async ({ pag
   const confirmation = page.getByRole('dialog', { name: 'Confirm node deletion' })
   await expect(confirmation).toBeVisible()
   await confirmation.getByRole('button', { name: 'DELETE', exact: true }).click()
-  await expect(page.locator('[data-node-kind="scene"]')).toHaveCount(8)
+  await expect(page.locator('[data-node-kind="scene"]')).toHaveCount(25)
   await expect(page.getByText('INT. TEST ROOM — NIGHT', { exact: true })).toHaveCount(0)
 })

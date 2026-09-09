@@ -137,7 +137,7 @@ export const resolveEditorialDecision = createServerFn({ method: 'POST' })
   .validator((input: EditorialDecisionRequest) => input)
   .handler(async ({ data }) => {
     const current = fallbackData()
-    await attemptRemoteEditorial(current, 'proposal-cut-sc47', data.decision, data.actor, data.note)
+    await attemptRemoteEditorial(current, 'proposal-cut-sc17', data.decision, data.actor, data.note)
     return setWorkspaceSnapshot(applyEditorialDecision(current, data))
   })
 

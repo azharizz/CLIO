@@ -24,15 +24,15 @@ class RecursiveClient:
         self.queries.append((sql, parameters or {}))
         return Result([
             {
-                "id": "40101010-1010-1010-1010-101010101047",
+                "id": "40101010-1010-1010-1010-000000001017",
                 "kind": "scene",
-                "label": "MOVING CAR — NIGHT",
-                "sequence": 6,
+                "label": "INT. BRIDGE / LOOKOUT — NIGHT",
+                "sequence": 17,
                 "stage_name": "Script",
                 "status": "breaking",
                 "film_id": "demo-feature",
                 "revision_id": "rev-05",
-                "scene_number": "47",
+                "scene_number": "17",
                 "metadata": "{}",
                 "provenance": '{"source":"direct_clickhouse"}',
             }
@@ -58,13 +58,13 @@ def test_clickhouse_repository_uses_recursive_queries_before_python_fallback():
     repository = ClickHouseFilmGraphRepository(ClickHouseSettings("localhost", 8123, "default", "", "filmgraph", False))
     client = RecursiveClient()
     repository._client = client
-    node_id = UUID("40101010-1010-1010-1010-101010101047")
+    node_id = UUID("40101010-1010-1010-1010-000000001017")
 
     impact = repository.get_node_impact(node_id)
     lineage = repository.get_lineage(node_id)
 
     assert impact[0].kind == GraphNodeKind.scene
-    assert lineage[0].scene_number == "47"
+    assert lineage[0].scene_number == "17"
     assert len(client.queries) == 2
     assert "WITH RECURSIVE" in client.queries[0][0]
     assert "WITH RECURSIVE" in client.queries[1][0]

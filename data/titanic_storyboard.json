@@ -1,0 +1,356 @@
+{
+  "version": "titanic-v1",
+  "durations": [300, 240, 270, 360, 390, 420, 420, 420, 420, 480, 480, 480, 480, 480, 480, 480, 510, 510, 510, 540, 540, 540, 480, 450, 1020],
+  "scenes": [
+    {
+      "number": "01",
+      "heading": "EXT. NORTH ATLANTIC / WRECK SITE — DAY (1996)",
+      "summary": "A deep-sea expedition maps the wreck and finds a portrait that brings an elderly witness back to 1912.",
+      "narration": "NARRATOR: The search begins where memory went down.",
+      "status": "understood",
+      "beats": [
+        {"title":"SONAR GRID","text":"The research vessel sweeps a sonar grid across the seabed.","narration":"NARRATOR: Steel leaves a shadow long after voices leave."},
+        {"title":"DESCENT","text":"A submersible drops through black water toward the liner’s broken bow.","narration":"NARRATOR: Below the surface, time has no shoreline."},
+        {"title":"WRECK","text":"The remote camera passes torn corridors, china, and a silent grand staircase.","narration":"NARRATOR: Every object keeps the shape of the hand that used it."},
+        {"title":"SAFE","text":"A robotic arm opens a battered safe and lifts a damp sketch case.","narration":"NARRATOR: The ocean gives back one small witness."},
+        {"title":"PORTRAIT","text":"A charcoal portrait appears on the monitor; the elderly Rose claims the young woman.","narration":"ROSE: That is me, before the ship became a story."}
+      ]
+    },
+    {
+      "number": "02",
+      "heading": "INT. KELDYSH — DAY (1996)",
+      "summary": "On the research ship, Rose identifies herself and turns a treasure hunt into a complete memory of Titanic.",
+      "narration": "ROSE: You are looking for a jewel; I remember a life.",
+      "status": "understood",
+      "beats": [
+        {"title":"NAME","text":"Rose Calvert watches the salvage team search the safe for the Heart of the Ocean.","narration":"ROSE: My name was Rose DeWitt Bukater then."},
+        {"title":"DRAWING","text":"The crew studies the dated drawing and compares it with the wreck footage.","narration":"NARRATOR: A face crosses a century intact."},
+        {"title":"DIAMOND","text":"Brock presses Rose for the diamond’s last known location.","narration":"BROCK: The stone was on the ship."},
+        {"title":"MEMORY","text":"Rose looks from the monitor to the sea and begins describing Southampton.","narration":"ROSE: It was called the Ship of Dreams."},
+        {"title":"TRANSITION","text":"The modern ocean dissolves into a crowded dock in April 1912.","narration":"NARRATOR: Her memory opens at the moment of departure."}
+      ]
+    },
+    {
+      "number": "03",
+      "heading": "INT. ROSE’S BEDROOM — NIGHT (1912)",
+      "summary": "Young Rose prepares for the maiden voyage while family duty turns her future into an arrangement.",
+      "narration": "NARRATOR: Before the ship moves, a life is already being steered.",
+      "status": "understood",
+      "beats": [
+        {"title":"DRESS","text":"Maids lace Rose into a corset while trunks are closed around her.","narration":"NARRATOR: Silk can feel like a restraint when every seam is watched."},
+        {"title":"MOTHER","text":"Ruth explains that the family’s money and name depend on Rose’s marriage.","narration":"RUTH: A daughter of our name has obligations."},
+        {"title":"CAL","text":"Caledon Hockley offers a jewel and speaks of their engagement as settled.","narration":"CAL: The future is already waiting for us."},
+        {"title":"WINDOW","text":"Rose looks down at ordinary travelers and imagines the street outside.","narration":"ROSE: Everyone down there seems to know where they are going."},
+        {"title":"DEPART","text":"The family carriage leaves for the docks beneath a grey sky.","narration":"NARRATOR: The road to Titanic narrows behind her."}
+      ]
+    },
+    {
+      "number": "04",
+      "heading": "EXT. SOUTHAMPTON DOCKS — DAY (1912)",
+      "summary": "Passengers crowd the quay as Titanic prepares to sail; Jack wins a last-minute passage and boards with steerage.",
+      "narration": "NARRATOR: A city gathers around one impossible machine.",
+      "status": "understood",
+      "beats": [
+        {"title":"ARRIVAL","text":"First-class cars and third-class carts converge on the enormous dock.","narration":"NARRATOR: Class divides the queue before the ship divides the sea."},
+        {"title":"JACK","text":"Jack Dawson wins passage in a card game and runs toward the gangway.","narration":"JACK: We have got a ship to catch."},
+        {"title":"WHISTLE","text":"Titanic’s hull rises above the dock while crewmen move beneath it.","narration":"NARRATOR: The ship looks less built than announced."},
+        {"title":"DECK","text":"Steerage passengers are counted, searched, and directed below.","narration":"NARRATOR: The same voyage begins through different doors."},
+        {"title":"SAIL","text":"Mooring lines fall and Southampton slides away from the stern.","narration":"NARRATOR: At last, the world starts moving backward."}
+      ]
+    },
+    {
+      "number": "05",
+      "heading": "INT. THIRD-CLASS CABIN / DECK — DAY",
+      "summary": "Jack finds friends among the steerage passengers and begins drawing the people and machinery around him.",
+      "narration": "NARRATOR: Below the polished rooms, the voyage is loud, close, and alive.",
+      "status": "understood",
+      "beats": [
+        {"title":"CABIN","text":"Jack stows his bag beside Fabrizio’s bunk in a crowded cabin.","narration":"FABRIZIO: We will make this ship remember us."},
+        {"title":"FRIENDS","text":"Tommy introduces Jack to the rough jokes and quick alliances of steerage.","narration":"NARRATOR: Friendship arrives before luggage is unpacked."},
+        {"title":"DECK","text":"Passengers cheer as Titanic gathers speed beyond the harbour.","narration":"NARRATOR: Everyone measures freedom by how fast the land disappears."},
+        {"title":"BOW","text":"Jack sketches faces, hands, and the hard geometry of the ship.","narration":"NARRATOR: He records strangers before they know they matter."},
+        {"title":"NIGHTFALL","text":"Electric lights bloom across the decks as open water surrounds the liner.","narration":"NARRATOR: Night turns the ship into its own small city."}
+      ]
+    },
+    {
+      "number": "06",
+      "heading": "INT. FIRST-CLASS SUITE — DAY",
+      "summary": "Rose is dressed for a first-class life while Ruth and Cal turn the voyage into a public rehearsal for marriage.",
+      "narration": "NARRATOR: Upstairs, comfort hides the pressure it was built to protect.",
+      "status": "understood",
+      "beats": [
+        {"title":"CORSET","text":"Ruth supervises Rose’s dress and corrects every detail of her posture.","narration":"NARRATOR: A perfect silhouette leaves little room to breathe."},
+        {"title":"ETIQUETTE","text":"Molly Brown offers Rose practical advice beneath the formal rules.","narration":"MOLLY: There is more than one way to survive a dinner."},
+        {"title":"GIFT","text":"Cal presents the Heart of the Ocean as proof of ownership and affection.","narration":"NARRATOR: The diamond shines brightest when no one asks what it costs."},
+        {"title":"ENGAGEMENT","text":"Ruth treats the wedding as a family rescue plan rather than a choice.","narration":"RUTH: We are both being practical."},
+        {"title":"TRAP","text":"Rose studies her reflection and feels the suite close around her.","narration":"ROSE: I can see the whole of my life, and I do not want it."}
+      ]
+    },
+    {
+      "number": "07",
+      "heading": "INT. FIRST-CLASS DINING SALON — EVENING",
+      "summary": "The first-class table celebrates speed and status while Rose performs the role everyone has chosen for her.",
+      "narration": "NARRATOR: The chandeliers hold a dinner above a dangerous silence.",
+      "status": "understood",
+      "beats": [
+        {"title":"TABLE","text":"Servants place silver and crystal as the guests take their seats.","narration":"NARRATOR: Every place setting marks a place in the order."},
+        {"title":"ISMAY","text":"J. Bruce Ismay praises Titanic’s speed and the attention it commands.","narration":"ISMAY: The maiden voyage must be remembered."},
+        {"title":"CAL","text":"Cal corrects Rose’s table manners while speaking for her.","narration":"CAL: A lady does not need to explain herself."},
+        {"title":"MOLLY","text":"Molly Brown punctures the performance with a joke and a new perspective.","narration":"MOLLY: Let the girl finish her own sentence."},
+        {"title":"STARES","text":"Rose leaves the table smiling for the room and empty for herself.","narration":"NARRATOR: Applause can sound like another locked door."}
+      ]
+    },
+    {
+      "number": "08",
+      "heading": "EXT. STERN — NIGHT",
+      "summary": "Rose walks to the stern intending to end her life; Jack finds her and gives her a reason to climb back.",
+      "narration": "NARRATOR: At the edge of the ship, one choice can change the entire map.",
+      "status": "understood",
+      "beats": [
+        {"title":"WALK","text":"Rose crosses empty corridors and reaches the cold stern deck alone.","narration":"NARRATOR: The ship keeps moving while she stands outside her future."},
+        {"title":"RAILING","text":"She climbs over the stern rail and looks down at the black water.","narration":"NARRATOR: The sea is close enough to answer."},
+        {"title":"JACK","text":"Jack sees her, talks about the drop, and asks her to look back at him.","narration":"JACK: Do not let go. Look at me."},
+        {"title":"RESCUE","text":"Jack pulls Rose over the rail as crewmen rush toward the commotion.","narration":"NARRATOR: Her first rescue is also their first connection."},
+        {"title":"DEAL","text":"Rose protects Jack from blame, and Cal offers him a place at dinner.","narration":"CAL: A debt of gratitude can be repaid at my table."}
+      ]
+    },
+    {
+      "number": "09",
+      "heading": "INT. FIRST-CLASS CORRIDOR — NIGHT",
+      "summary": "The rescue becomes a social transaction as Cal, Lovejoy, and Rose decide what Jack’s presence will mean.",
+      "narration": "NARRATOR: A private rescue is rewritten by the people who witnessed it.",
+      "status": "understood",
+      "beats": [
+        {"title":"REPORT","text":"Rose’s maid reports the incident while Ruth listens for scandal.","narration":"NARRATOR: The story reaches the drawing room before Rose does."},
+        {"title":"CAL","text":"Cal questions Jack and measures him against the rules of the ship.","narration":"CAL: Courage is not the same as belonging."},
+        {"title":"LOVEJOY","text":"Spicer Lovejoy searches Jack for a motive behind the rescue.","narration":"LOVEJOY: Everyone wants something."},
+        {"title":"THANKS","text":"Rose tells Jack she owes him her life, not an explanation.","narration":"ROSE: You saw me as a person."},
+        {"title":"INVITE","text":"Cal insists Jack attend dinner in first class under his supervision.","narration":"NARRATOR: The invitation is a leash dressed as courtesy."}
+      ]
+    },
+    {
+      "number": "10",
+      "heading": "INT. FIRST-CLASS DINING SALON — NIGHT",
+      "summary": "Jack joins Cal’s table and answers the class test with a life shaped by travel, work, and observation.",
+      "narration": "NARRATOR: The room asks Jack to prove he deserves to breathe its air.",
+      "status": "understood",
+      "beats": [
+        {"title":"ARRIVAL","text":"Jack enters in borrowed clothes while every face turns toward him.","narration":"NARRATOR: A borrowed coat cannot hide a real life."},
+        {"title":"TEST","text":"The guests ask where he studied, what he owns, and who will vouch for him.","narration":"NARRATOR: Questions become fences when answers are ranked."},
+        {"title":"ART","text":"Jack describes seeing the world and drawing people instead of collecting possessions.","narration":"JACK: I keep moving; I keep looking."},
+        {"title":"ROSE","text":"Rose watches him make room for possibility at a table built from certainty.","narration":"NARRATOR: Her escape begins as attention."},
+        {"title":"UNEASE","text":"Cal smiles across the table while Lovejoy studies Jack’s hands.","narration":"NARRATOR: Control notices freedom before freedom notices itself."}
+      ]
+    },
+    {
+      "number": "11",
+      "heading": "INT. GRAND STAIRCASE / PROMENADE — NIGHT",
+      "summary": "Rose slips away from the formal party and meets Jack between the grand staircase and the open deck.",
+      "narration": "NARRATOR: The ship has two nights, and Rose starts walking between them.",
+      "status": "understood",
+      "beats": [
+        {"title":"ESCAPE","text":"Rose leaves the dinner before dessert and descends toward the public corridors.","narration":"NARRATOR: Her footsteps become her first unscripted sentence."},
+        {"title":"DECK","text":"Jack catches her under the lifeboat davits and offers the view beyond the rail.","narration":"JACK: You do not have to stay where they put you."},
+        {"title":"SKETCHES","text":"Rose discovers Jack’s drawings and sees his attention as a kind of respect.","narration":"ROSE: You look at people without asking them to perform."},
+        {"title":"TURN","text":"She crosses from the polished promenade toward the music below.","narration":"NARRATOR: A doorway becomes a border she chooses to cross."},
+        {"title":"MUSIC","text":"Steerage music rises through the stairwell as Rose follows it downstairs.","narration":"NARRATOR: The ship’s heartbeat is louder below."}
+      ]
+    },
+    {
+      "number": "12",
+      "heading": "INT. THIRD-CLASS PARTY — NIGHT",
+      "summary": "Rose joins the steerage celebration, finding movement, laughter, and a version of herself that Cal cannot choreograph.",
+      "narration": "NARRATOR: In the lower rooms, joy does not ask for a ticket.",
+      "status": "understood",
+      "beats": [
+        {"title":"WELCOME","text":"Tommy raises a glass as Jack brings Rose into the crowded room.","narration":"TOMMY: Tonight, everyone gets the same floor."},
+        {"title":"DANCE","text":"Rose tries the fast steps and lets the music pull her out of posture.","narration":"NARRATOR: Her body remembers freedom before her mind approves it."},
+        {"title":"LAUGH","text":"Jack and Rose laugh when exhaustion turns the dance into a stumble.","narration":"ROSE: I have never been this tired."},
+        {"title":"WATCH","text":"Lovejoy learns that Rose has left the first-class party.","narration":"NARRATOR: Somewhere above, the search for her has already begun."},
+        {"title":"CHASE","text":"Rose races back toward the upper decks before the night can expose them.","narration":"NARRATOR: The secret returns upstairs with wet shoes and a pulse."}
+      ]
+    },
+    {
+      "number": "13",
+      "heading": "EXT. BOW — NIGHT",
+      "summary": "Jack brings Rose to the bow, where the horizon, wind, and their first kiss give her a new sense of scale.",
+      "narration": "NARRATOR: The front of the ship feels like the front of a life.",
+      "status": "understood",
+      "beats": [
+        {"title":"MEET","text":"Rose finds Jack waiting at the prow after slipping away from her chaperone.","narration":"NARRATOR: Their private place is made from open water."},
+        {"title":"HORIZON","text":"They speak about the places Jack has seen and the choices Rose has not made.","narration":"JACK: The horizon is wider than this ship."},
+        {"title":"RAIL","text":"Jack guides Rose’s hands to the rail and steadies her against the wind.","narration":"NARRATOR: Trust begins as balance."},
+        {"title":"WINGS","text":"Rose opens her arms over the bow and feels the ship carry her forward.","narration":"ROSE: I can see everything now."},
+        {"title":"KISS","text":"They kiss while Titanic cuts a bright line through the dark sea.","narration":"NARRATOR: A small decision becomes impossible to hide from them."}
+      ]
+    },
+    {
+      "number": "14",
+      "heading": "INT. ROSE’S SUITE — DAY",
+      "summary": "Rose invites Jack to draw her wearing the Heart of the Ocean, turning a stolen hour into a record of her choice.",
+      "narration": "NARRATOR: The portrait is commissioned by a woman choosing how she will be seen.",
+      "status": "understood",
+      "beats": [
+        {"title":"RETURN","text":"Rose brings Jack into the suite while the family is elsewhere on the ship.","narration":"NARRATOR: Every quiet corridor carries a risk."},
+        {"title":"POSE","text":"She asks Jack to draw her without the manners and clothes that define her.","narration":"ROSE: Draw me as the person I am trying to become."},
+        {"title":"DIAMOND","text":"The Heart of the Ocean rests at her throat as she settles before the sketchbook.","narration":"NARRATOR: The jewel becomes evidence, not decoration."},
+        {"title":"SKETCH","text":"Jack draws while Rose holds his gaze and refuses to look away.","narration":"NARRATOR: The line of a pencil makes a private promise visible."},
+        {"title":"STAMP","text":"Jack dates the portrait and Rose hides it among her belongings.","narration":"NARRATOR: One image survives because someone chose to keep it."}
+      ]
+    },
+    {
+      "number": "15",
+      "heading": "INT. ROSE’S SUITE / CORRIDOR — NIGHT",
+      "summary": "Cal discovers the portrait and sends Lovejoy after Rose and Jack as the romance becomes an open threat.",
+      "narration": "NARRATOR: The room that held a secret becomes the room that exposes it.",
+      "status": "understood",
+      "beats": [
+        {"title":"DISCOVER","text":"Cal opens Rose’s sketch case and finds the drawing beside the jewel.","narration":"NARRATOR: Paper can cut deeper than a confession."},
+        {"title":"RAGE","text":"He tears through the room and demands that Rose return to her role.","narration":"CAL: You will not make a fool of me."},
+        {"title":"DIAMOND","text":"Rose refuses to apologize for wanting a life that belongs to her.","narration":"ROSE: I am not a possession."},
+        {"title":"LOVEJOY","text":"Cal orders Lovejoy to find the couple and bring Rose back.","narration":"NARRATOR: The chase begins behind polished doors."},
+        {"title":"RUN","text":"Rose and Jack escape down service stairs toward the cargo hold.","narration":"NARRATOR: Their route leaves first class and enters the machinery of survival."}
+      ]
+    },
+    {
+      "number": "16",
+      "heading": "INT. CARGO HOLD — NIGHT",
+      "summary": "Rose and Jack hide among the automobiles, choosing intimacy while Lovejoy searches the dark hold around them.",
+      "narration": "NARRATOR: Beneath the ballroom, metal and breath become a private room.",
+      "status": "understood",
+      "beats": [
+        {"title":"HOLD","text":"Jack leads Rose between crates and covered cars in the dim cargo deck.","narration":"NARRATOR: The ship stores its wealth below the people who own it."},
+        {"title":"RENAULT","text":"He opens the door of a Renault and gives Rose a moment without witnesses.","narration":"JACK: For a minute, let the ship belong to nobody."},
+        {"title":"CHOICE","text":"Rose closes the car door on Cal’s world and stays with Jack.","narration":"NARRATOR: Consent becomes the clearest line in the scene."},
+        {"title":"WINDOW","text":"Their breath fogs the glass as the car rocks with the moving hull.","narration":"NARRATOR: The ocean writes a temporary mark on the window."},
+        {"title":"FOOTSTEPS","text":"Lovejoy passes close by; the couple remains hidden until the hold is quiet.","narration":"NARRATOR: Danger walks past without seeing the future it carries."}
+      ]
+    },
+    {
+      "number": "17",
+      "heading": "INT. BRIDGE / LOOKOUT — NIGHT",
+      "summary": "Lookouts spot an iceberg, the bridge orders a turn, and Titanic strikes the ice beneath the calm surface.",
+      "narration": "NARRATOR: The revision point is not the collision alone; it is every line that now has to move.",
+      "status": "breaking",
+      "beats": [
+        {"title":"WATCH","text":"Lookouts scan a flat, moonlit sea while the bridge keeps the liner on course.","narration":"NARRATOR: Calm water can conceal a wall."},
+        {"title":"ICE","text":"A dark mass resolves ahead; the warning bell breaks the bridge routine.","narration":"LOOKOUT: Iceberg, dead ahead."},
+        {"title":"ORDER","text":"Murdoch orders the engines reversed and the helm hard over.","narration":"NARRATOR: A command travels faster than a ship can turn."},
+        {"title":"SCRAPE","text":"Titanic’s hull meets the iceberg below the waterline and compartments begin to flood.","narration":"NARRATOR: The damage is quiet enough to be misunderstood."},
+        {"title":"SILENCE","text":"The ship shudders; passengers wake without yet knowing the shape of the danger.","narration":"NARRATOR: Every story after this moment inherits the impact."}
+      ]
+    },
+    {
+      "number": "18",
+      "heading": "INT. LOWER DECKS / STEERAGE CORRIDORS — NIGHT",
+      "summary": "Water enters the lower decks while officers calculate the damage and steerage passengers meet locked gates and confusing routes.",
+      "narration": "NARRATOR: The first people to feel the sinking are the people furthest from the boats.",
+      "status": "pending",
+      "beats": [
+        {"title":"ALARM","text":"Officers inspect the damaged compartments and send runners through the ship.","narration":"NARRATOR: Information arrives as fragments before it becomes an order."},
+        {"title":"WATER","text":"The mail room and boiler spaces take on water behind closing doors.","narration":"NARRATOR: Steel doors delay the sea but cannot negotiate with it."},
+        {"title":"GATES","text":"Steerage passengers reach barriers and search for a route upward.","narration":"NARRATOR: A map designed for class becomes a trap."},
+        {"title":"CALCULATION","text":"Thomas Andrews traces the flooding and estimates the remaining time.","narration":"ANDREWS: The ship cannot stay afloat."},
+        {"title":"DANGER","text":"The warning reaches upper decks while the lower corridors grow harder to cross.","narration":"NARRATOR: The timetable is now measured in rooms filling with water."}
+      ]
+    },
+    {
+      "number": "19",
+      "heading": "INT. FIRST-CLASS SUITE / CORRIDOR — NIGHT",
+      "summary": "Rose and Jack return to the changing ship; Cal discovers the diamond and frames Jack before the evacuation.",
+      "narration": "NARRATOR: The old order keeps fighting even after the ship proves it cannot protect anyone.",
+      "status": "pending",
+      "beats": [
+        {"title":"RETURN","text":"Rose and Jack emerge from the cargo hold into corridors filled with questions.","narration":"NARRATOR: Their private escape ends in a public emergency."},
+        {"title":"CAL","text":"Cal sees Rose with Jack and hides panic beneath an order to return to the suite.","narration":"CAL: Stay with me and you will be safe."},
+        {"title":"COAT","text":"Cal retrieves the Heart of the Ocean and slips it into a coat near Jack.","narration":"NARRATOR: A jewel becomes a weapon in a single pocket."},
+        {"title":"FRAME","text":"Lovejoy points officers toward Jack and supplies a story that sounds official.","narration":"LOVEJOY: The evidence is on him."},
+        {"title":"ARREST","text":"Jack is handcuffed and taken below while Rose is directed toward the lifeboats.","narration":"NARRATOR: The revision now changes both the romance and the escape path."}
+      ]
+    },
+    {
+      "number": "20",
+      "heading": "EXT. BOAT DECK / GRAND STAIRCASE — NIGHT",
+      "summary": "Lifeboats begin launching as Rose is separated from Jack, then refuses safety when she realizes he is still trapped.",
+      "narration": "NARRATOR: A seat in a boat is offered as if survival can be assigned.",
+      "status": "pending",
+      "beats": [
+        {"title":"BOATS","text":"Women and children are loaded while officers count places and lower the first boats.","narration":"NARRATOR: The deck becomes a ledger of who is allowed to leave."},
+        {"title":"CAL","text":"Cal promises Rose a future while concealing the truth about Jack’s arrest.","narration":"CAL: There is room for you beside me."},
+        {"title":"LOOKBACK","text":"From the boat, Rose sees Jack missing and understands the story Cal has manufactured.","narration":"ROSE: Where is he?"},
+        {"title":"CHOICE","text":"Rose steps away from the lifeboat and runs back toward the sinking ship.","narration":"NARRATOR: The safest decision is not the decision she can live with."},
+        {"title":"RETURN","text":"She crosses the grand staircase as water rises through the lower levels.","narration":"NARRATOR: Love becomes an upstream route through the disaster."}
+      ]
+    },
+    {
+      "number": "21",
+      "heading": "INT. FLOODED MASTER-AT-ARMS OFFICE — NIGHT",
+      "summary": "Rose finds Jack handcuffed in a flooding office, breaks the chain, and leads them through the rising corridors.",
+      "narration": "NARRATOR: The rescue reverses direction; the person saved becomes the person who saves.",
+      "status": "pending",
+      "beats": [
+        {"title":"SEARCH","text":"Rose follows signs and echoes toward the holding room below deck.","narration":"NARRATOR: Every corridor is now a question with a closing door."},
+        {"title":"WATER","text":"Jack calls from behind the bars as water reaches the office floor.","narration":"JACK: Rose, I am here."},
+        {"title":"AXE","text":"Rose finds an emergency axe and raises it with both hands.","narration":"NARRATOR: Fear is still present; it simply has a task."},
+        {"title":"BREAK","text":"She strikes the chain and frees Jack from the handcuffs.","narration":"NARRATOR: One cut restores the line between them."},
+        {"title":"ESCAPE","text":"They swim through a corridor as doors buckle and the lights fail overhead.","narration":"NARRATOR: The ship’s interior becomes an ocean of its own."}
+      ]
+    },
+    {
+      "number": "22",
+      "heading": "EXT. BOAT DECK / COLLAPSING SHIP — NIGHT",
+      "summary": "Rose and Jack move through the evacuation as Cal fires after them and Titanic’s stern begins to rise.",
+      "narration": "NARRATOR: The last open deck is shrinking beneath every choice.",
+      "status": "pending",
+      "beats": [
+        {"title":"BOATS","text":"They reach the boat deck where launches continue under shouted orders.","narration":"NARRATOR: There are too few boats for the scale of the night."},
+        {"title":"CAL","text":"Cal returns with a gun and claims the diamond will buy a place in the next boat.","narration":"NARRATOR: Wealth survives only as long as someone believes it can."},
+        {"title":"JACK","text":"Rose rejects Cal’s promise and stays with Jack at the rail.","narration":"ROSE: I am not getting on without you."},
+        {"title":"COLLAPSE","text":"The stern lifts and the musicians keep playing as passengers search for higher ground.","narration":"NARRATOR: Music gives panic a rhythm it cannot stop."},
+        {"title":"GUN","text":"Cal fires; Rose and Jack run toward the rising stern while the crowd breaks apart.","narration":"NARRATOR: The route forward is now vertical."}
+      ]
+    },
+    {
+      "number": "23",
+      "heading": "INT. GRAND STAIRCASE / EXT. STERN — NIGHT",
+      "summary": "The hull tears apart, passengers slide into the sea, and Rose and Jack cling to the stern as Titanic disappears beneath them.",
+      "narration": "NARRATOR: The ship’s final movement carries everyone beyond the old map.",
+      "status": "pending",
+      "beats": [
+        {"title":"STAIRCASE","text":"Water climbs the grand staircase while glass, furniture, and people move together.","narration":"NARRATOR: The symbol of order becomes a river."},
+        {"title":"RUN","text":"Jack and Rose climb across decks toward the highest end of the ship.","narration":"NARRATOR: Every step is taken on a structure already failing."},
+        {"title":"BREAK","text":"The hull splits and the lights vanish as the bow drops away.","narration":"NARRATOR: The impossible ship finally separates from itself."},
+        {"title":"FALL","text":"Passengers slide down the rising stern into the black Atlantic.","narration":"NARRATOR: Gravity finishes what the iceberg began."},
+        {"title":"STERN","text":"Rose and Jack hold the rail as the stern points into the sky.","narration":"JACK: Stay with me."}
+      ]
+    },
+    {
+      "number": "24",
+      "heading": "EXT. NORTH ATLANTIC — NIGHT",
+      "summary": "In the freezing water, Rose and Jack share a floating panel, promise a future, and wait for a lifeboat to return.",
+      "narration": "NARRATOR: Survival becomes a space barely large enough for one body and one promise.",
+      "status": "pending",
+      "beats": [
+        {"title":"WRECKAGE","text":"The wreck scatters debris and survivors across the dark water.","narration":"NARRATOR: The sea removes every distinction the ship enforced."},
+        {"title":"PANEL","text":"Rose climbs onto a floating panel while Jack stays beside her in the water.","narration":"NARRATOR: A door becomes a raft because there is nothing else."},
+        {"title":"PROMISE","text":"Jack keeps Rose awake and makes her promise to continue living.","narration":"JACK: You will build a life beyond this night."},
+        {"title":"DISTANCE","text":"A lifeboat rows away, then turns after Rose’s voice reaches the survivors.","narration":"NARRATOR: The smallest sound can redirect the rescue."},
+        {"title":"WHISTLE","text":"Rose finds the officer’s whistle and calls until the lifeboat sees her.","narration":"NARRATOR: Her voice is the last signal between memory and morning."}
+      ]
+    },
+    {
+      "number": "25",
+      "heading": "EXT. CARPATHIA / NEW YORK / ROSE’S MEMORY — DAWN/NIGHT",
+      "summary": "Rose is rescued, chooses her own name, survives into old age, and returns the diamond to the ocean before finding Titanic alive in memory.",
+      "narration": "NARRATOR: The ending is not the sinking; it is the life Rose carries away.",
+      "status": "resolved",
+      "beats": [
+        {"title":"RESCUE","text":"Carpathia reaches the survivors and lifts Rose from the freezing sea.","narration":"NARRATOR: Dawn counts the living without explaining the missing."},
+        {"title":"NAME","text":"On the rescue ship, Rose refuses Cal’s name and chooses to introduce herself anew.","narration":"ROSE: I will say my own name."},
+        {"title":"NEW YORK","text":"She steps onto the New York dock alone, carrying grief and the possibility of work, travel, and change.","narration":"NARRATOR: A life begins in the space the ship could not close."},
+        {"title":"DIAMOND","text":"Decades later, elderly Rose releases the Heart of the Ocean over the dark water.","narration":"NARRATOR: The treasure returns to the place that kept the truth."},
+        {"title":"REUNION","text":"Rose dies peacefully and imagines the Titanic’s grand staircase filled with the people she loved.","narration":"NARRATOR: The final map is memory, and everyone is waiting there."}
+      ]
+    }
+  ]
+}

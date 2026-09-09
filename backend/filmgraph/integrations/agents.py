@@ -12,6 +12,11 @@ from typing import Any, Protocol
 from uuid import UUID
 
 from filmgraph.models import AgentEvent, AgentEventKind, Provenance, utcnow
+from filmgraph.titanic_storyboard import STORYBOARD_VERSION
+
+
+TITANIC_REVISION = "V5 · TITANIC / COLLISION"
+TITANIC_CHANGE = "CALM COURSE → ICEBERG COLLISION"
 
 
 class AgentProvider(Protocol):
@@ -75,16 +80,16 @@ class SimulatedAgentProvider:
             wanted = focus_value.replace("SC ", "").strip().lower()
             focus = next((node for node in nodes if str(node.get("scene_number", "")).lower() == wanted), None)
         if focus is None:
-            focus = next((node for node in nodes if str(node.get("scene_number", "")) == "47"), None)
+            focus = next((node for node in nodes if str(node.get("scene_number", "")) == "17"), None)
         if focus is None and nodes:
             focus = nodes[0]
-        focus = focus or {"id": "scene-47", "scene_number": "47", "label": "SC 47"}
+        focus = focus or {"id": "scene-17", "scene_number": "17", "label": "SC 17"}
         focus_id = str(focus.get("id"))
 
         by_id = {str(node.get("id")): node for node in nodes}
 
         # A scene can have more than one relationship to the same neighbor
-        # (for example, SC 47 both follows and pays off into SC 48). Keep the
+        # (for example, SC 17 both follows and pays off into SC 18). Keep the
         # agent answer about affected scenes, not about duplicate edge rows.
         parents: dict[str, list[str]] = {}
         children: dict[str, list[str]] = {}
@@ -171,7 +176,7 @@ class SimulatedAgentProvider:
             (AgentEventKind.progress, "phase:narrative", {"phase": "narrative", "action": action, "focus": _label(focus), "notes": f"Reading {_label(focus)} action and narration: {focus.get('narration_text') or 'no narration line'}"}),
             (AgentEventKind.tool_call, "phase:graph", {"phase": "graph", "action": action, "focus": _label(focus), "node_count": len(nodes), "notes": graph_note}),
             (AgentEventKind.message, "phase:analytics", {"phase": "analytics", "action": action, "focus": _label(focus), "notes": analytics_note, "duration_seconds": duration, "film_duration_seconds": total}),
-            (AgentEventKind.tool_result, "phase:revision", {"phase": "revision", "action": action, "focus": _label(focus), "revision": "V5", "change": "INTERIOR RESTAURANT → MOVING CAR", "notes": "Revision text remains the source of truth."}),
+            (AgentEventKind.tool_result, "phase:revision", {"phase": "revision", "action": action, "focus": _label(focus), "revision": TITANIC_REVISION, "change": TITANIC_CHANGE, "storyboard_version": STORYBOARD_VERSION, "notes": "Revision text remains the source of truth."}),
             (AgentEventKind.completed, "phase:critic", {"phase": "critic", "action": action, "focus": _label(focus), "assessment": notes, "prompt": prompt}),
         ]
         for kind, message, payload in events:
@@ -247,7 +252,7 @@ class OpenRouterAdkAgentProvider:
             target = next((node for node in nodes if str(node.get("id")) == focus), {})
             return {"focus_duration_seconds": target.get("duration_seconds"), "film_duration_seconds": max((int(node.get("end_seconds") or 0) for node in nodes), default=0), "scene_count": sum(node.get("kind") == "scene" for node in nodes)}
         if name == "get_revision":
-            return {"revision": "V5", "change": "INTERIOR RESTAURANT → MOVING CAR", "source": "LOCAL DEMO"}
+            return {"revision": TITANIC_REVISION, "change": TITANIC_CHANGE, "source": "LOCAL DEMO · TITANIC", "storyboard_version": STORYBOARD_VERSION}
         raise ValueError(f"unknown agent tool: {name}")
 
     async def start_run(self, context: dict[str, Any]) -> AsyncIterator[AgentEvent]:

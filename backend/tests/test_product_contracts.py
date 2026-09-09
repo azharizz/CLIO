@@ -53,7 +53,7 @@ def test_simulated_provider_answers_node_operations():
     repository = get_repository()
     graph_nodes = [node.model_dump(mode="json") for node in repository.list_graph_nodes()]
     graph_edges = [edge.model_dump(mode="json") for edge in repository.list_graph_edges()]
-    focus_node = next(node for node in graph_nodes if node.get("scene_number") == "47")
+    focus_node = next(node for node in graph_nodes if node.get("scene_number") == "17")
 
     async def collect(prompt: str):
         provider = SimulatedAgentProvider()
@@ -66,13 +66,13 @@ def test_simulated_provider_answers_node_operations():
             "graph_edges": graph_edges,
         })]
 
-    edit = asyncio.run(collect("[EDIT NODE] Edit SC 47. Which nodes are affected?"))
-    remove = asyncio.run(collect("[REMOVE NODE] Remove SC 47. Which nodes become unnecessary?"))
-    add = asyncio.run(collect("[ADD NODE] Add a pickup near SC 47. Which connections are possible?"))
+    edit = asyncio.run(collect("[EDIT NODE] Edit SC 17. Which nodes are affected?"))
+    remove = asyncio.run(collect("[REMOVE NODE] Remove SC 17. Which nodes become unnecessary?"))
+    add = asyncio.run(collect("[ADD NODE] Add a pickup near SC 17. Which connections are possible?"))
 
     assert "AFFECTED" in edit[1].payload["notes"]
-    assert edit[1].payload["notes"].count("SC 48") == 1
-    assert "SC 49" in edit[1].payload["notes"]
+    assert edit[1].payload["notes"].count("SC 18") == 1
+    assert "SC 19" in edit[1].payload["notes"]
     assert "UNNEEDED" in remove[1].payload["notes"]
     assert "POSSIBLE CONNECTIONS" in add[1].payload["notes"]
     assert "narration" in edit[0].payload["notes"].lower()
@@ -117,20 +117,20 @@ def test_browser_boundary_exposes_timed_scene_impact():
     workspace = client.get("/api/v1/workspace?filmId=demo-feature&revisionId=rev-05")
     assert workspace.status_code == 200
     payload = workspace.json()
-    node = next(item for item in payload["graph_nodes"] if item.get("scene_number") == "47")
+    node = next(item for item in payload["graph_nodes"] if item.get("scene_number") == "17")
     node_id = node["id"]
 
     impact = client.get(f"/api/v1/nodes/{node_id}/impact")
     assert impact.status_code == 200
     assert impact.json()["lineage"]
 
-    assert node["script_text"].startswith("Mara and Jon argue")
+    assert node["script_text"].startswith("Lookouts spot an iceberg")
     assert node["narration_text"].startswith("NARRATOR:")
-    assert node["start_seconds"] == 456
-    assert node["end_seconds"] == 588
-    assert node["duration_seconds"] == 132
+    assert node["start_seconds"] == 6600
+    assert node["end_seconds"] == 7110
+    assert node["duration_seconds"] == 510
     assert UUID(node_id)
 
-    beats = [item for item in payload["graph_nodes"] if item["kind"] == "beat" and item.get("scene_number") == "47"]
-    assert len(beats) == 4
+    beats = [item for item in payload["graph_nodes"] if item["kind"] == "beat" and item.get("scene_number") == "17"]
+    assert len(beats) == 5
     assert all(item["parent_scene_id"] == node_id for item in beats)

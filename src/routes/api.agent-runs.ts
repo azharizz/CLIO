@@ -21,7 +21,7 @@ export const Route = createFileRoute('/api/agent-runs')({
             // The local simulation does not require a persisted workflow UUID.
           }
         }
-        normalized.prompt = normalized.prompt ?? 'Assess V5 / SC 47 and recommend an editorial resolution.'
+        normalized.prompt = normalized.prompt ?? 'Assess V5 / TITANIC / SC 17 and recommend an editorial resolution.'
         normalized.runtime_mode = normalized.runtime_mode ?? 'simulation'
         try {
           if (!normalized.workflow_id) throw new Error('no workflow available')

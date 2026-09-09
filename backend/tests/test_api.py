@@ -25,8 +25,8 @@ def test_workspace_is_script_first_and_timed():
     assert payload["workspace"] == {
         "pipeline_name": "CLIO script graph",
         "stage_count": 1,
-        "node_count": 25,
-        "edge_count": 35,
+        "node_count": 151,
+        "edge_count": 253,
         "workflow_count": 1,
         "run_count": 0,
         "delivery_count": 0,
@@ -35,16 +35,16 @@ def test_workspace_is_script_first_and_timed():
     assert [stage["name"] for stage in payload["pipeline_stages"]] == ["Script"]
     scenes = [node for node in payload["graph_nodes"] if node["kind"] == "scene"]
     beats = [node for node in payload["graph_nodes"] if node["kind"] == "beat"]
-    assert len(scenes) == 8
-    assert len(beats) == 16
-    assert scenes[5]["scene_number"] == "47"
-    assert scenes[5]["start_seconds"] == 456
-    assert scenes[5]["end_seconds"] == 588
-    assert scenes[5]["duration_seconds"] == 132
-    assert scenes[5]["narration_text"] == "NARRATOR: In motion, the truth has nowhere to sit."
-    scene_47_beats = [node for node in beats if node["scene_number"] == "47"]
-    assert len(scene_47_beats) == 4
-    assert all(node["parent_scene_id"] == scenes[5]["id"] for node in scene_47_beats)
+    assert len(scenes) == 25
+    assert len(beats) == 125
+    scene_17 = next(scene for scene in scenes if scene["scene_number"] == "17")
+    assert scene_17["start_seconds"] == 6600
+    assert scene_17["end_seconds"] == 7110
+    assert scene_17["duration_seconds"] == 510
+    assert "revision" in scene_17["narration_text"].lower()
+    scene_17_beats = [node for node in beats if node["scene_number"] == "17"]
+    assert len(scene_17_beats) == 5
+    assert all(node["parent_scene_id"] == scene_17["id"] for node in scene_17_beats)
     for previous, current in zip(scenes, scenes[1:]):
         assert previous["end_seconds"] - previous["start_seconds"] == previous["duration_seconds"]
         assert current["start_seconds"] == previous["end_seconds"]
@@ -60,11 +60,11 @@ def test_node_impact_and_agent_stream_use_scene_context():
     reset_singletons()
     client = TestClient(create_app())
     workspace = client.get("/api/v1/workspace").json()
-    scene_47 = next(node for node in workspace["graph_nodes"] if node.get("scene_number") == "47")
+    scene_17 = next(node for node in workspace["graph_nodes"] if node.get("scene_number") == "17")
 
-    impact = client.get(f"/api/v1/nodes/{scene_47['id']}/impact")
+    impact = client.get(f"/api/v1/nodes/{scene_17['id']}/impact")
     assert impact.status_code == 200
-    assert any(node.get("scene_number") == "47" for node in impact.json()["impact_nodes"])
+    assert any(node.get("scene_number") == "17" for node in impact.json()["impact_nodes"])
     assert any(node.get("kind") == "script" for node in impact.json()["lineage"])
 
     workflow_id = workspace["workflows"][0]["id"]
@@ -76,7 +76,7 @@ def test_node_impact_and_agent_stream_use_scene_context():
             "stage_name": "Script",
             "runtime_mode": "simulation",
             "action": "edit",
-            "focus_node": scene_47["id"],
+            "focus_node": scene_17["id"],
         },
     )
     assert run.status_code == 201
@@ -115,8 +115,8 @@ def test_script_node_crud_persists_events_and_cascades_children():
     client = TestClient(create_app())
 
     initial = client.get("/api/v1/workspace").json()
-    assert len(initial["graph_nodes"]) == 25
-    assert len(initial["graph_edges"]) == 35
+    assert len(initial["graph_nodes"]) == 151
+    assert len(initial["graph_edges"]) == 253
 
     scene_response = client.post(
         "/api/v1/graph/nodes",
@@ -126,8 +126,8 @@ def test_script_node_crud_persists_events_and_cascades_children():
             "heading": "INT. TEST ROOM — NIGHT",
             "script_text": "A new scene enters the cut.",
             "narration_text": "NARRATOR: A new line joins the map.",
-            "start_seconds": 780,
-            "end_seconds": 840,
+            "start_seconds": 11700,
+            "end_seconds": 11760,
             "actor": "EDITORIAL",
         },
     )
@@ -144,10 +144,10 @@ def test_script_node_crud_persists_events_and_cascades_children():
             "kind": "beat",
             "parent_scene_id": "scene-50",
             "heading": "TURN",
-            "script_text": "Mara turns toward the window.",
+            "script_text": "The new scene turns toward the horizon.",
             "narration_text": "NARRATOR: The room gives way to motion.",
-            "start_seconds": 800,
-            "end_seconds": 840,
+            "start_seconds": 11720,
+            "end_seconds": 11760,
         },
     )
     assert beat_response.status_code == 201
@@ -161,15 +161,15 @@ def test_script_node_crud_persists_events_and_cascades_children():
     edited = client.patch(
         f"/api/v1/graph/nodes/{beat['id']}",
         json={
-            "script_text": "Mara turns toward the rear window.",
+            "script_text": "The new scene turns toward the open sea.",
             "narration_text": "NARRATOR: The turn is now part of the record.",
-            "start_seconds": 810,
-            "end_seconds": 840,
+            "start_seconds": 11730,
+            "end_seconds": 11760,
         },
     )
     assert edited.status_code == 200
     assert edited.json()["duration_seconds"] == 30
-    assert edited.json()["script_text"].endswith("rear window.")
+    assert edited.json()["script_text"].endswith("open sea.")
 
     invalid = client.patch(
         f"/api/v1/graph/nodes/{beat['id']}",
@@ -182,8 +182,8 @@ def test_script_node_crud_persists_events_and_cascades_children():
     assert deleted.status_code == 200
     assert beat["id"] in deleted.json()["deleted_ids"]
     final = client.get("/api/v1/workspace").json()
-    assert len(final["graph_nodes"]) == 25
-    assert len(final["graph_edges"]) == 35
+    assert len(final["graph_nodes"]) == 151
+    assert len(final["graph_edges"]) == 253
     assert [event["kind"] for event in final["workflow_events"][-4:]] == [
         "graph.node.created",
         "graph.node.created",

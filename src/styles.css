@@ -565,6 +565,22 @@ button:focus-visible,
   border-color: #4b4b4b;
 }
 
+/* The agent's related-node state is intentionally transient. It is a state
+   glow, not a resting card shadow, and is replayable from the agent overlay. */
+.fg-frame.is-agent-related {
+  z-index: 4;
+  border-color: var(--cyan);
+  outline: 1px solid var(--cyan);
+  outline-offset: 3px;
+  animation: fg-agent-related-glow 850ms steps(2, end) infinite;
+}
+
+.fg-frame--breaking.is-agent-related {
+  border-color: var(--magenta);
+  outline-color: var(--magenta);
+  animation-name: fg-agent-related-glow-breaking;
+}
+
 .fg-frame.is-gated {
   border-style: dashed;
 }
@@ -1135,6 +1151,24 @@ button:focus-visible,
 
 @keyframes fg-trace {
   to { stroke-dashoffset: -22; }
+}
+
+@keyframes fg-agent-related-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(14, 232, 255, 0.45), 0 0 0 rgba(14, 232, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(14, 232, 255, 0.95), 0 0 18px rgba(14, 232, 255, 0.66);
+  }
+}
+
+@keyframes fg-agent-related-glow-breaking {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(255, 46, 147, 0.45), 0 0 0 rgba(255, 46, 147, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(255, 46, 147, 0.95), 0 0 18px rgba(255, 46, 147, 0.66);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1997,6 +2031,37 @@ button:focus-visible,
   line-height: 1.35;
 }
 
+.fg-agent-related {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding-top: 0.42rem;
+  border-top: 1px solid var(--line);
+  color: var(--cyan);
+  font-size: 0.43rem;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.fg-agent-related button {
+  flex: 0 0 auto;
+  min-height: 1.55rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  font-size: 0.42rem;
+  letter-spacing: 0.08em;
+  text-align: left;
+}
+
+.fg-agent-related button:hover,
+.fg-agent-related button:focus-visible {
+  background: var(--cyan);
+  color: var(--black);
+}
+
 .fg-footer { display: none; }
 
 @media (max-width: 860px) {
@@ -2077,6 +2142,15 @@ button:focus-visible,
   .fg-inspector,
   .fg-agent-overlay {
     transition: none !important;
+  }
+
+  .fg-frame.is-agent-related {
+    animation: none !important;
+    box-shadow: 0 0 0 2px var(--cyan);
+  }
+
+  .fg-frame--breaking.is-agent-related {
+    box-shadow: 0 0 0 2px var(--magenta);
   }
 }
 
@@ -2271,6 +2345,81 @@ button:focus-visible,
   letter-spacing: 0;
 }
 
+.fg-git-diff__subgrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.4rem;
+  letter-spacing: 0.08em;
+}
+
+.fg-git-compare {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.72rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.fg-git-compare__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.fg-git-compare__side {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.55rem;
+  border: 1px solid var(--line);
+  background: var(--black);
+}
+
+.fg-git-compare__side.is-after {
+  border-color: var(--cyan);
+}
+
+.fg-git-compare__eyebrow {
+  color: var(--muted);
+  font-size: 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+.fg-git-compare__side.is-after .fg-git-compare__eyebrow {
+  color: var(--cyan);
+}
+
+.fg-git-compare__side strong {
+  overflow: hidden;
+  color: var(--white);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fg-git-compare__side > span:not(.fg-git-compare__eyebrow) {
+  overflow: hidden;
+  color: var(--paper);
+  font-size: 0.43rem;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fg-git-compare__side p {
+  display: -webkit-box;
+  max-height: 2.7rem;
+  margin: 0.15rem 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.46rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 .fg-git-history__list {
   display: grid;
   max-height: 13rem;
@@ -2355,6 +2504,24 @@ button:focus-visible,
   background: var(--frame);
 }
 
+.fg-git-overlay__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.fg-action--quiet {
+  border-color: var(--line-hi);
+  color: var(--paper);
+}
+
+.fg-action--quiet:hover,
+.fg-action--quiet:focus-visible {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
 .fg-git-provenance {
   overflow: hidden;
   color: var(--muted);
@@ -2390,6 +2557,11 @@ button:focus-visible,
   line-height: 1.5;
 }
 
+.fg-git-empty .fg-action {
+  justify-self: start;
+  margin-top: 0.35rem;
+}
+
 @media (max-width: 860px) {
   .fg-git-overlay {
     top: 4rem;
@@ -2414,8 +2586,17 @@ button:focus-visible,
     flex-direction: column;
   }
 
-  .fg-git-overlay__foot .fg-action {
+  .fg-git-overlay__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fg-git-overlay__actions .fg-action {
     width: 100%;
+  }
+
+  .fg-git-compare__grid {
+    grid-template-columns: 1fr;
   }
 
   .fg-git-diff__grid {
@@ -3155,13 +3336,17 @@ body:has(.fg-proto-sheet) {
   align-items: flex-start;
   justify-content: center;
   gap: clamp(0.55rem, 1.4vw, 1.1rem);
+  min-height: 0;
   padding: clamp(0.75rem, 2.8vh, 2rem) 0 clamp(0.55rem, 1.8vh, 1.25rem);
 }
 
 .fg-proto-markwrap {
-  flex: 1;
+  /* CLIO is much squarer than the original wide FILMGRAPH mark.  Letting
+     it consume the full row turns it into a billboard on large monitors. */
+  flex: 0 1 auto;
+  width: min(100%, 34rem);
+  height: clamp(9rem, 25vh, 16rem);
   min-width: 0;
-  max-width: 1180px;
 }
 
 .fg-proto-wordmark {
@@ -3178,8 +3363,10 @@ body:has(.fg-proto-sheet) {
 
 .fg-proto-mark {
   display: block;
-  width: 100%;
-  height: auto;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  margin: 0 auto;
   overflow: visible;
 }
 
@@ -3380,6 +3567,7 @@ body:has(.fg-proto-sheet) {
 
   .fg-proto-mark__line { stroke-width: 4; }
   .fg-proto-mark__pulse { stroke-width: 6; }
+  .fg-proto-markwrap { height: clamp(8rem, 22vh, 11rem); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3639,4 +3827,111 @@ body:has(.fg-proto-sheet) {
     margin-left: 0;
   }
   .fg-changebar { top: 4.7rem; }
+}
+
+/* Remote workspace hydration: keep the first paint calm and useful while
+   ClickHouse Cloud answers. These are solid frame placeholders rather than a
+   decorative gradient, and the graph remains the only dominant artifact. */
+.fg-sync-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  min-height: 1.2rem;
+  padding: 0.24rem 0.35rem;
+  border: 1px solid var(--line-hi);
+  color: var(--muted);
+  font-size: 0.48rem;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.fg-sync-state::before {
+  width: 0.32rem;
+  height: 0.32rem;
+  border: 1px solid currentColor;
+  content: '';
+}
+
+.fg-sync-state--loading,
+.fg-sync-state--refreshing {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.fg-sync-state--ready {
+  border-color: var(--line-hi);
+  color: var(--quiet);
+}
+
+.fg-sync-state--offline {
+  border-color: var(--magenta);
+  color: var(--magenta);
+}
+
+.fg-workspace-skeleton {
+  position: absolute;
+  z-index: 8;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  gap: 1rem;
+  padding: 5rem clamp(1rem, 8vw, 7rem);
+  background: var(--black);
+  pointer-events: none;
+}
+
+.fg-workspace-skeleton__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 46rem;
+}
+
+.fg-workspace-skeleton__frames {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.45rem, 1.5vw, 1rem);
+  max-width: 46rem;
+}
+
+.fg-workspace-skeleton__frame {
+  display: block;
+  aspect-ratio: 2.39 / 1;
+  min-height: 4.5rem;
+  border: 1px solid var(--line-hi);
+  background: var(--frame-hi);
+  animation: fg-skeleton-breathe 1.35s linear infinite alternate;
+}
+
+.fg-workspace-skeleton__frame--wide {
+  grid-column: span 2;
+}
+
+.fg-workspace-skeleton__frame--low {
+  transform: translateY(1.1rem);
+}
+
+.fg-workspace-skeleton__line {
+  width: min(46rem, 80%);
+  height: 1px;
+  background: var(--line-hi);
+}
+
+@keyframes fg-skeleton-breathe {
+  from { opacity: 0.45; }
+  to { opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fg-workspace-skeleton__frame { animation: none; }
+}
+
+@media (max-width: 560px) {
+  .fg-sync-state { padding-inline: 0.25rem; font-size: 0.4rem; }
+  .fg-workspace-skeleton { padding: 4rem 1rem; }
+  .fg-workspace-skeleton__frames { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fg-workspace-skeleton__frame--wide { grid-column: span 1; }
+  .fg-workspace-skeleton__frame--low { transform: none; }
 }

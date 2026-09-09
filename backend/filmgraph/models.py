@@ -151,6 +151,20 @@ class ScriptGitApplyRequest(BaseModel):
     document: Optional[Dict[str, Any]] = None
 
 
+class ScriptGitRevertRequest(BaseModel):
+    """Restore the script graph captured by the latest Git apply/restore.
+
+    The previous graph is kept inside the append-only workflow event by the
+    server.  The browser never supplies a graph for this operation, which
+    keeps recovery authoritative and prevents a stale client from overwriting
+    the current script map.
+    """
+
+    workflow_id: Optional[UUID] = None
+    actor: str = Field(default="EDITORIAL", min_length=1, max_length=80)
+    runtime_mode: str = "simulation"
+
+
 class GraphNodeCreateRequest(BaseModel):
     """Human-authored script node fields used by the CRUD boundary.
 
@@ -299,14 +313,14 @@ class DeliveryCreateRequest(BaseModel):
 
 class RuntimeProposalSelectRequest(BaseModel):
     workflow_id: UUID
-    proposal_id: str = "cut-sc47"
+    proposal_id: str = "cut-sc17"
     actor: str = "editorial"
     runtime_mode: str = "simulation"
 
 
 class EditorialDecisionRequest(BaseModel):
     workflow_id: UUID
-    proposal_id: str = "cut-sc47"
+    proposal_id: str = "cut-sc17"
     approved: bool
     actor: str = "reviewer"
     reason: Optional[str] = None

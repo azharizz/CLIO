@@ -32,6 +32,49 @@ from filmgraph.models import GraphEdge, GraphNode, GraphNodeKind, Provenance, ut
 SCRIPT_NAMESPACE = UUID("7b7b7b7b-1111-4222-8333-aaaaaaaaaaaa")
 MAX_SCRIPT_BYTES = 750_000
 DEFAULT_HISTORY_LIMIT = 12
+DEMO_OWNER = "owner"
+DEMO_REPO = "repository"
+DEMO_PATH = "script.fountain"
+DEMO_MAIN_SHA = "clio-demo-main-0001"
+DEMO_BEFORE_SHA = "clio-demo-before-0001"
+
+# The placeholder shown in the onboarding/demo UI is intentionally runnable
+# without inventing a real GitHub repository. It behaves like two commits so
+# a reviewer can exercise load → compare → apply → restore offline; every
+# other GitHub source continues through the real REST adapter below.
+DEMO_MAIN_SCRIPT = """SC 16 — INT. CARGO HOLD — NIGHT [01:42:00-01:50:00]
+
+Rose and Jack hide among the automobiles while Lovejoy searches the hold.
+
+NARRATOR: Beneath the ballroom, metal and breath become a private room.
+
+SC 17 — INT. BRIDGE / LOOKOUT — NIGHT [01:50:00-01:58:30]
+
+Lookouts spot an iceberg; the bridge orders a turn and Titanic strikes the ice.
+
+NARRATOR: The collision is the cut that moves every later survival beat.
+
+SC 18 — INT. LOWER DECKS — NIGHT [01:58:30-02:07:00]
+
+Water enters the lower decks as passengers meet locked gates and confusing routes.
+"""
+
+DEMO_BEFORE_SCRIPT = """SC 16 — INT. CARGO HOLD — NIGHT [01:42:00-01:50:00]
+
+Rose and Jack hide among the automobiles while Lovejoy searches the hold.
+
+NARRATOR: Beneath the ballroom, metal and breath become a private room.
+
+SC 17 — INT. BRIDGE / LOOKOUT — NIGHT [01:50:00-01:58:30]
+
+The bridge holds course in calm water; lookouts have not yet seen the iceberg.
+
+NARRATOR: The ship appears safe because the danger is still outside the frame.
+
+SC 18 — INT. LOWER DECKS — NIGHT [01:58:30-02:07:00]
+
+The lower decks remain dry while passengers prepare for another quiet watch.
+"""
 
 
 class ScriptGitError(RuntimeError):
@@ -459,7 +502,7 @@ def parse_screenplay(content: str, *, sha: str, film_id: str = "demo-feature") -
     for scene_index, scene in enumerate(scenes, start=1):
         scene_uuid = node_id("scene", str(scene["number"]))
         scene_ids[str(scene["number"])] = scene_uuid
-        status = "breaking" if str(scene["number"]) == "47" else "understood"
+        status = "breaking" if str(scene["number"]) == "17" else "understood"
         scene_prov = _provenance("github", estimated=bool(scene["estimate"]))
         nodes.append(
             GraphNode(
@@ -573,7 +616,15 @@ def load_github_script(
 ) -> dict[str, Any]:
     """Fetch one GitHub file, its commit history, and its parsed graph."""
 
-    target = _resolve_ref(parse_github_source(source, ref=ref, path=path), token)
+    parsed_target = parse_github_source(source, ref=ref, path=path)
+    if (
+        parsed_target.owner == DEMO_OWNER
+        and parsed_target.repo == DEMO_REPO
+        and parsed_target.path == DEMO_PATH
+    ):
+        return _load_placeholder_demo_script(parsed_target, history_limit)
+
+    target = _resolve_ref(parsed_target, token)
     file_payload = _fetch_file(target, token)
     sha = str(file_payload["sha"])
     parsed = parse_screenplay(str(file_payload["content"]), sha=sha)
@@ -620,6 +671,69 @@ def load_github_script(
             adapter="github-script-loader",
             runtime_mode="local",
             tool_name="github.contents",
+        ).model_dump(mode="json"),
+    }
+
+
+def _load_placeholder_demo_script(target: GitHubTarget, history_limit: int) -> dict[str, Any]:
+    """Return the offline two-commit fixture behind the default URL.
+
+    This is deliberately scoped to the literal ``owner/repository`` placeholder
+    and never masks a real repository. The response keeps the same shape as a
+    GitHub REST load, allowing the UI's normal revision picker and apply/revert
+    path to be exercised with no network or credentials.
+    """
+    selected_before = target.ref == DEMO_BEFORE_SHA
+    sha = DEMO_BEFORE_SHA if selected_before else DEMO_MAIN_SHA
+    content = DEMO_BEFORE_SCRIPT if selected_before else DEMO_MAIN_SCRIPT
+    source_url = target.source_url or f"https://github.com/{DEMO_OWNER}/{DEMO_REPO}/blob/main/{DEMO_PATH}"
+    revisions = [
+        {
+            "sha": DEMO_MAIN_SHA,
+            "short_sha": DEMO_MAIN_SHA[:8],
+            "message": "Cut Titanic SC 17 to the collision",
+            "author": "CLIO demo",
+            "committed_at": "2026-01-02T10:00:00Z",
+            "html_url": source_url,
+            "selected": not selected_before,
+        },
+        {
+            "sha": DEMO_BEFORE_SHA,
+            "short_sha": DEMO_BEFORE_SHA[:8],
+            "message": "Calm course before the iceberg",
+            "author": "CLIO demo",
+            "committed_at": "2026-01-01T10:00:00Z",
+            "html_url": source_url.replace("/main/", f"/{DEMO_BEFORE_SHA}/"),
+            "selected": selected_before,
+        },
+    ][: max(1, min(history_limit, 30))]
+    parsed = parse_screenplay(content, sha=sha)
+    return {
+        "source": "github",
+        "repository": f"{DEMO_OWNER}/{DEMO_REPO}",
+        "owner": DEMO_OWNER,
+        "repo": DEMO_REPO,
+        "path": DEMO_PATH,
+        "ref": target.ref or "main",
+        "sha": sha,
+        "short_sha": sha[:8],
+        "html_url": source_url,
+        "raw_url": f"https://raw.githubusercontent.com/{DEMO_OWNER}/{DEMO_REPO}/main/{DEMO_PATH}",
+        "size": len(content.encode("utf-8")),
+        "message": next(item["message"] for item in revisions if item["sha"] == sha),
+        "revisions": revisions,
+        "content": content,
+        "parsed": parsed["parsed"],
+        "nodes": parsed["nodes"],
+        "edges": parsed["edges"],
+        "revision_id": parsed["revision_id"],
+        "content_hash": parsed["content_hash"],
+        "provenance": Provenance(
+            source="computed",
+            transport="local-fixture",
+            adapter="github-script-demo",
+            runtime_mode="local",
+            tool_name="github.placeholder",
         ).model_dump(mode="json"),
     }
 

@@ -18,6 +18,7 @@ import {
   type WorkspaceNode,
   type WorkspaceSnapshot,
 } from './contracts'
+import { TITANIC_SCENE_SEEDS, TITANIC_TOTAL_DURATION_SECONDS } from './titanic-storyboard'
 
 export * from './contracts'
 
@@ -181,8 +182,13 @@ const sceneSeeds: SceneSeed[] = [
   },
 ]
 
-const revisionBefore = 'Mara and Jon argue inside the restaurant; the key changes hands.'
-const revisionAfter = 'Mara and Jon argue in a moving car; the key changes hands.'
+// The canonical active demo is the full Titanic storyboard. The compact
+// legacy literal above remains only as a compatibility reference for older
+// imports; all fallback snapshots now use the shared 25-scene dataset.
+const activeSceneSeeds = TITANIC_SCENE_SEEDS
+
+const revisionBefore = 'The ship holds course in calm water; passengers remain unaware of the iceberg ahead.'
+const revisionAfter = 'The ship strikes the iceberg; every later escape and survival beat inherits the impact.'
 
 const stageId = (number: string) => `scene-${number}`
 const beatId = (sceneNumber: string, number: number) => `beat-${sceneNumber}-${String(number).padStart(2, '0')}`
@@ -200,12 +206,12 @@ const revisionNode: WorkspaceNode = {
     kind: 'revision',
     stage: 'Script',
     eyebrow: 'REVISION / SOURCE',
-    title: 'V5 · SC 47',
+    title: 'V5 · TITANIC / COLLISION',
     code: 'REV-05',
     metric: '1 CHANGE',
     secondary: 'SCRIPT',
     status: 'breaking',
-    detail: 'The current revision changes the scene setting while preserving the handoff beat.',
+    detail: 'The collision revision changes every downstream survival and escape beat in the Titanic map.',
     scriptText: revisionAfter,
     previousScriptText: revisionBefore,
     currentScriptText: revisionAfter,
@@ -215,7 +221,7 @@ const revisionNode: WorkspaceNode = {
   },
 }
 
-const sceneNodes: WorkspaceNode[] = sceneSeeds.map((scene, index) => {
+const sceneNodes: WorkspaceNode[] = activeSceneSeeds.map((scene, index) => {
   const duration = scene.end - scene.start
   const data: GraphNodeData = {
     kind: 'scene',
@@ -226,7 +232,7 @@ const sceneNodes: WorkspaceNode[] = sceneSeeds.map((scene, index) => {
     title: scene.heading,
     code: `${formatClock(scene.start)} → ${formatClock(scene.end)}`,
     metric: formatClock(duration),
-    secondary: scene.number === '47' ? `CHANGED · B${String(scene.beats.length).padStart(2, '0')}` : `B${String(scene.beats.length).padStart(2, '0')}`,
+    secondary: scene.number === '17' ? `CHANGED · B${String(scene.beats.length).padStart(2, '0')}` : `B${String(scene.beats.length).padStart(2, '0')}`,
     status: scene.status,
     detail: scene.text,
     scriptText: scene.text,
@@ -237,12 +243,12 @@ const sceneNodes: WorkspaceNode[] = sceneSeeds.map((scene, index) => {
     durationSeconds: duration,
     provenance: computed,
     entityType: 'scene',
-    scope: scene.number === '47' ? 'focus' : 'film',
+    scope: scene.number === '17' ? 'focus' : 'film',
   }
   return { id: stageId(scene.number), position: scenePosition(index), data }
 })
 
-const beatNodes: WorkspaceNode[] = sceneSeeds.flatMap((scene, sceneIndex) => scene.beats.map((beat) => {
+const beatNodes: WorkspaceNode[] = activeSceneSeeds.flatMap((scene, sceneIndex) => scene.beats.map((beat) => {
   const duration = beat.end - beat.start
   const parent = sceneNodes[sceneIndex]!
   const data: GraphNodeData = {
@@ -292,18 +298,18 @@ const edge = (
 })
 
 const scriptEdges: WorkspaceEdge[] = [
-  edge('e-revision-sc47', revisionNode.id, stageId('47'), 'revises', 'breaking'),
-  ...sceneSeeds.slice(0, -1).map((scene, index) => edge(
-    `e-scene-${scene.number}-${sceneSeeds[index + 1]!.number}`,
+  edge('e-revision-sc17', revisionNode.id, stageId('17'), 'revises', 'breaking'),
+  ...activeSceneSeeds.slice(0, -1).map((scene, index) => edge(
+    `e-scene-${scene.number}-${activeSceneSeeds[index + 1]!.number}`,
     stageId(scene.number),
-    stageId(sceneSeeds[index + 1]!.number),
+    stageId(activeSceneSeeds[index + 1]!.number),
     'follows',
     scene.status,
   )),
-  edge('e-sc42-setup-sc47', stageId('42'), stageId('47'), 'sets_up', 'understood'),
-  edge('e-sc47-payoff-sc48', stageId('47'), stageId('48'), 'pays_off', 'breaking'),
-  edge('e-sc44-context-sc47', stageId('44'), stageId('47'), 'motivates', 'understood'),
-  ...sceneSeeds.flatMap((scene) => scene.beats.flatMap((beat, index) => {
+  edge('e-sc01-setup-sc17', stageId('01'), stageId('17'), 'sets_up', 'understood'),
+  edge('e-sc17-payoff-sc18', stageId('17'), stageId('18'), 'pays_off', 'breaking'),
+  edge('e-sc16-context-sc17', stageId('16'), stageId('17'), 'motivates', 'understood'),
+  ...activeSceneSeeds.flatMap((scene) => scene.beats.flatMap((beat, index) => {
     const current = beatId(scene.number, beat.number)
     const parent = stageId(scene.number)
     const contains = edge(`e-${parent}-${current}`, parent, current, 'contains', scene.status, 'beat')
@@ -314,8 +320,8 @@ const scriptEdges: WorkspaceEdge[] = [
   })),
 ]
 
-const totalDurationSeconds = sceneSeeds.reduce((latest, scene) => Math.max(latest, scene.end), 0)
-const totalBeatCount = sceneSeeds.reduce((total, scene) => total + scene.beats.length, 0)
+const totalDurationSeconds = TITANIC_TOTAL_DURATION_SECONDS
+const totalBeatCount = activeSceneSeeds.reduce((total, scene) => total + scene.beats.length, 0)
 
 export const runtimeValue = (seconds: number) => ({
   value: Math.round(seconds / 60),
@@ -326,14 +332,14 @@ const baseSnapshot: () => WorkspaceSnapshot = () => ({
   workspaceId: WORKSPACE_ID,
   filmId: FILM_ID,
   revisionId: REVISION_ID,
-  revisionLabel: 'V5 · SC 47',
+  revisionLabel: 'V5 · TITANIC / COLLISION',
   title: 'CLIO',
   subtitle: 'CONTINUITY & LINEAGE INTELLIGENCE OPERATOR',
-  changedScene: 'SC 47 · RESTAURANT → MOVING CAR',
+  changedScene: 'SC 17 · CALM COURSE → ICEBERG COLLISION',
   revisionBefore,
   revisionAfter,
   totalDurationSeconds,
-  sceneCount: sceneSeeds.length,
+  sceneCount: activeSceneSeeds.length,
   beatCount: totalBeatCount,
   frameRate: FRAME_RATE,
   currentRuntime: runtimeValue(totalDurationSeconds),
@@ -346,7 +352,7 @@ const baseSnapshot: () => WorkspaceSnapshot = () => ({
   workflowEvents: [],
   agentEvents: [],
   dataSource: source('computed', 'LOCAL FALLBACK', 'MCP-first; direct ClickHouse fallback when configured'),
-  selectedNodeId: stageId('47'),
+  selectedNodeId: stageId('17'),
 })
 
 let serverSnapshot = baseSnapshot()
@@ -495,7 +501,7 @@ export function createLocalGraphNode(snapshot: WorkspaceSnapshot, draft: GraphNo
   const parentIndex = next.graph.nodes.findIndex((item) => item.id === parent.id)
   if (parentIndex >= 0) {
     next.graph.nodes[parentIndex]!.data.childCount = siblings.length + 1
-    next.graph.nodes[parentIndex]!.data.secondary = parent.data.sceneNumber === '47' ? `CHANGED · B${String(siblings.length + 1).padStart(2, '0')}` : `B${String(siblings.length + 1).padStart(2, '0')}`
+    next.graph.nodes[parentIndex]!.data.secondary = parent.data.sceneNumber === '17' ? `CHANGED · B${String(siblings.length + 1).padStart(2, '0')}` : `B${String(siblings.length + 1).padStart(2, '0')}`
   }
   appendWorkflowEvent(next, 'graph.node.created', 'EDITORIAL', { nodeId: node.id, kind: 'beat', parentSceneId: parent.id, beatNumber }, node.data.provenance ?? computed)
   next.selectedNodeId = node.id
@@ -554,7 +560,7 @@ export function deleteLocalGraphNode(snapshot: WorkspaceSnapshot, nodeId: string
   if (parent) {
     const count = next.graph.nodes.filter((node) => node.data.kind === 'beat' && node.data.parentSceneId === parent.id).length
     parent.data.childCount = count
-    parent.data.secondary = parent.data.sceneNumber === '47' && parent.data.status === 'breaking' ? `CHANGED · B${String(count).padStart(2, '0')}` : `B${String(count).padStart(2, '0')}`
+    parent.data.secondary = parent.data.sceneNumber === '17' && parent.data.status === 'breaking' ? `CHANGED · B${String(count).padStart(2, '0')}` : `B${String(count).padStart(2, '0')}`
   }
   appendWorkflowEvent(next, 'graph.node.deleted', 'EDITORIAL', { nodeId, deletedIds: [...deleted].join(',') }, localNodeProvenance('node deleted'))
   const replacement = next.graph.nodes.find((node) => node.data.kind === 'scene') ?? next.graph.nodes.find((node) => node.data.kind === 'revision')
@@ -565,7 +571,7 @@ export function deleteLocalGraphNode(snapshot: WorkspaceSnapshot, nodeId: string
 
 /** Kept as a compatibility helper for older server-function callers. */
 export function stageIds() {
-  return sceneSeeds.map((scene) => stageId(scene.number))
+  return activeSceneSeeds.map((scene) => stageId(scene.number))
 }
 
 function appendWorkflowEvent(
@@ -756,7 +762,7 @@ export function createAgentEventStream(snapshot: WorkspaceSnapshot, context: Loc
     event('narrative', 'SCRIPT / READ', `${sceneLabel(focus)} · ${focus.data.scriptText ?? focus.data.detail ?? ''} · NARRATION: ${focus.data.narrationText ?? '—'}`),
     event('graph', 'GRAPH / TRACED', actionDetail, action === 'edit' || action === 'remove' ? 'breaking' : 'understood'),
     event('analytics', 'TIME / COMPUTED', analytics),
-    event('revision', 'REVISION / V5', `${sceneLabel(focus)} is the ${focus.id === 'revision-v5' ? 'source change' : 'selected script node'}.`),
+    event('revision', 'REVISION / V5 · TITANIC', `${sceneLabel(focus)} is the ${focus.id === 'revision-v5' ? 'collision source change' : 'selected Titanic script node'}.`),
     event('critic', 'CRITIC / PROPOSE', action === 'inspect' ? 'No write proposed; review the path first.' : 'Proposal only; a person must decide whether to change the script.', 'pending'),
   ]
 }

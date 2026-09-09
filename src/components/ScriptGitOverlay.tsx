@@ -9,6 +9,7 @@ const DEFAULT_SOURCE = 'https://github.com/owner/repository/blob/main/script.fou
 type Props = {
   snapshot: WorkspaceSnapshot
   onApplied: () => void
+  onRestored?: () => void
   onClose: () => void
 }
 
@@ -31,7 +32,7 @@ function revisionButtonLabel(revision: ScriptGitRevision): string {
   return revision.selected ? 'CURRENT' : 'LOAD'
 }
 
-export function ScriptGitOverlay({ snapshot, onApplied, onClose }: Props) {
+export function ScriptGitOverlay({ snapshot, onApplied, onRestored, onClose }: Props) {
   const [source, setSource] = useState(() => {
     try { return window.localStorage.getItem(SOURCE_KEY) ?? snapshot.scriptGit?.htmlUrl ?? DEFAULT_SOURCE } catch { return snapshot.scriptGit?.htmlUrl ?? DEFAULT_SOURCE }
   })
@@ -40,6 +41,7 @@ export function ScriptGitOverlay({ snapshot, onApplied, onClose }: Props) {
   const [document, setDocument] = useState<ScriptGitDocument | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [applying, setApplying] = useState(false)
+  const [restoring, setRestoring] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -67,13 +69,55 @@ export function ScriptGitOverlay({ snapshot, onApplied, onClose }: Props) {
     let changed = 0
     for (const [sceneKey, next] of incomingMap) {
       const previous = currentMap.get(sceneKey)
-      if (previous && [previous.data.title, previous.data.scriptText, previous.data.startSeconds, previous.data.endSeconds].join('|') !== [next.data.title, next.data.scriptText, next.data.startSeconds, next.data.endSeconds].join('|')) changed += 1
+      if (previous && [previous.data.title, previous.data.scriptText, previous.data.narrationText, previous.data.startSeconds, previous.data.endSeconds].join('|') !== [next.data.title, next.data.scriptText, next.data.narrationText, next.data.startSeconds, next.data.endSeconds].join('|')) changed += 1
+    }
+    const currentBeats = snapshot.graph.nodes.filter((node) => node.data.kind === 'beat')
+    const incomingBeats = document.nodes.filter((node) => node.data.kind === 'beat')
+    const beatKey = (node: WorkspaceNode) => `${node.data.sceneNumber ?? ''}:${node.data.beatNumber ?? ''}`
+    const currentBeatMap = new Map(currentBeats.map((node) => [beatKey(node), node]))
+    const incomingBeatMap = new Map(incomingBeats.map((node) => [beatKey(node), node]))
+    let changedBeats = 0
+    for (const [beatKeyValue, next] of incomingBeatMap) {
+      const previous = currentBeatMap.get(beatKeyValue)
+      if (previous && [previous.data.title, previous.data.scriptText, previous.data.narrationText, previous.data.startSeconds, previous.data.endSeconds].join('|') !== [next.data.title, next.data.scriptText, next.data.narrationText, next.data.startSeconds, next.data.endSeconds].join('|')) changedBeats += 1
     }
     return {
       added: [...incomingMap.keys()].filter((sceneKey) => !currentMap.has(sceneKey)).length,
       removed: [...currentMap.keys()].filter((sceneKey) => !incomingMap.has(sceneKey)).length,
       changed,
+      addedBeats: [...incomingBeatMap.keys()].filter((beatKeyValue) => !currentBeatMap.has(beatKeyValue)).length,
+      removedBeats: [...currentBeatMap.keys()].filter((beatKeyValue) => !incomingBeatMap.has(beatKeyValue)).length,
+      changedBeats,
       durationDelta: document.parsed.durationSeconds - snapshot.totalDurationSeconds,
+    }
+  }, [document, snapshot])
+
+  const compare = useMemo(() => {
+    if (!document) return undefined
+    const currentScenes = snapshot.graph.nodes.filter((node) => node.data.kind === 'scene')
+    const currentBeats = snapshot.graph.nodes.filter((node) => node.data.kind === 'beat')
+    const loadedScenes = document.nodes.filter((node) => node.data.kind === 'scene')
+    const loadedBeats = document.nodes.filter((node) => node.data.kind === 'beat')
+    const activeRevision = snapshot.scriptGit?.shortSha ?? snapshot.revisionLabel.split(' · ')[0] ?? 'LOCAL'
+    const activeSource = snapshot.scriptGit?.repository ?? 'LOCAL DEMO'
+    const loadedScene = loadedScenes[0]
+    return {
+      active: {
+        revision: activeRevision,
+        source: activeSource,
+        scenes: currentScenes.length,
+        beats: currentBeats.length,
+        duration: snapshot.totalDurationSeconds,
+        sample: currentScenes[0]?.data.scriptText ?? currentScenes[0]?.data.title ?? 'No active scene',
+      },
+      loaded: {
+        revision: document.shortSha,
+        source: document.repository,
+        scenes: loadedScenes.length,
+        beats: loadedBeats.length,
+        duration: document.parsed.durationSeconds,
+        sample: loadedScene?.data.scriptText ?? loadedScene?.data.title ?? 'No loaded scene',
+      },
     }
   }, [document, snapshot])
 
@@ -125,6 +169,35 @@ export function ScriptGitOverlay({ snapshot, onApplied, onClose }: Props) {
       setError(errorMessage(applyError))
     } finally {
       setApplying(false)
+    }
+  }
+
+  const restore = async () => {
+    setRestoring(true)
+    setError('')
+    setNotice('')
+    try {
+      const response = await fetch('/api/script-git/revert', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actor: 'EDITORIAL', runtime_mode: 'simulation' }),
+      })
+      const payload = await response.json().catch(() => ({})) as Record<string, unknown>
+      if (!response.ok) {
+        const detail = payload.detail && typeof payload.detail === 'object' ? payload.detail as Record<string, unknown> : {}
+        throw new Error(String(detail.message ?? payload.message ?? `Restore failed (${response.status})`))
+      }
+      const restoredCount = typeof payload.restored_scene_count === 'number' ? payload.restored_scene_count : undefined
+      setNotice(`RESTORED BEFORE MAP${restoredCount === undefined ? '' : ` · ${restoredCount} SCENES`}`)
+      onRestored?.()
+      // The existing callback refreshes the authoritative workspace and
+      // closes the overlay. Keep it as a compatibility path for the current
+      // workspace shell when no dedicated restore callback is supplied.
+      if (!onRestored) onApplied()
+    } catch (restoreError) {
+      setError(errorMessage(restoreError))
+    } finally {
+      setRestoring(false)
     }
   }
 
@@ -185,6 +258,33 @@ export function ScriptGitOverlay({ snapshot, onApplied, onClose }: Props) {
                 <span><b>{diff.removed}</b> REMOVED</span>
                 <span><b>{diff.durationDelta === 0 ? '—' : `${diff.durationDelta > 0 ? '+' : ''}${formatClock(Math.abs(diff.durationDelta))}`}</b> RUNTIME</span>
               </div>
+              <div className="fg-git-diff__subgrid">
+                <span>{diff.changedBeats} BEATS CHANGED</span>
+                <span>{diff.addedBeats} BEATS ADDED</span>
+                <span>{diff.removedBeats} BEATS REMOVED</span>
+              </div>
+            </section>
+          ) : null}
+
+          {compare ? (
+            <section className="fg-git-compare" aria-label="Before and after script map">
+              <div className="fg-section-line"><span className="fg-label">BEFORE / AFTER</span><span className="fg-micro">READ ONLY UNTIL APPLY</span></div>
+              <div className="fg-git-compare__grid">
+                <article className="fg-git-compare__side">
+                  <span className="fg-git-compare__eyebrow">BEFORE · ACTIVE MAP</span>
+                  <strong>{compare.active.revision}</strong>
+                  <span>{compare.active.source}</span>
+                  <span>{compare.active.scenes} SCENES · {compare.active.beats} BEATS · {formatClock(compare.active.duration)}</span>
+                  <p>{compare.active.sample}</p>
+                </article>
+                <article className="fg-git-compare__side is-after">
+                  <span className="fg-git-compare__eyebrow">AFTER · LOADED COMMIT</span>
+                  <strong>{compare.loaded.revision}</strong>
+                  <span>{compare.loaded.source}</span>
+                  <span>{compare.loaded.scenes} SCENES · {compare.loaded.beats} BEATS · {formatClock(compare.loaded.duration)}</span>
+                  <p>{compare.loaded.sample}</p>
+                </article>
+              </div>
             </section>
           ) : null}
 
@@ -195,11 +295,19 @@ export function ScriptGitOverlay({ snapshot, onApplied, onClose }: Props) {
 
           <footer className="fg-git-overlay__foot">
             <span className="fg-git-provenance">GITHUB · {document.shortSha} · {document.provenance.source.toUpperCase()}</span>
-            <button type="button" className="fg-action" onClick={() => void apply()} disabled={applying}>{applying ? 'APPLYING…' : 'APPLY TO MAP'}</button>
+            <div className="fg-git-overlay__actions">
+              {snapshot.scriptGit ? <button type="button" className="fg-action fg-action--quiet" onClick={() => void restore()} disabled={applying || restoring}>{restoring ? 'RESTORING…' : 'RESTORE BEFORE'}</button> : null}
+              <button type="button" className="fg-action" onClick={() => void apply()} disabled={applying || restoring}>{applying ? 'APPLYING…' : 'APPLY TO MAP'}</button>
+            </div>
           </footer>
         </>
       ) : (
-        <div className="fg-git-empty"><span className="fg-git-empty__mark">↳</span><strong>BRING THE SCRIPT HISTORY INTO THE MAP.</strong><span>Load a Fountain, Markdown, or plain-text screenplay from GitHub. Select a commit to inspect it, then apply it deliberately.</span></div>
+        <div className="fg-git-empty">
+          <span className="fg-git-empty__mark">↳</span>
+          <strong>BRING THE SCRIPT HISTORY INTO THE MAP.</strong>
+          <span>Load a Fountain, Markdown, or plain-text screenplay from GitHub. Select a commit to inspect it, then apply it deliberately.</span>
+          {snapshot.scriptGit ? <button type="button" className="fg-action fg-action--quiet" onClick={() => void restore()} disabled={restoring}>{restoring ? 'RESTORING…' : 'RESTORE BEFORE'}</button> : null}
+        </div>
       )}
     </section>
   )

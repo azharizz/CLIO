@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -26,6 +27,12 @@ from filmgraph.models import (
 from filmgraph.graph_queries import recursive_impact_query, recursive_lineage_query
 
 
+DEMO_FILM_ID = "demo-feature"
+DEMO_STORYBOARD_VERSION = "titanic-v1"
+DEMO_SCENE_COUNT = 25
+DEMO_BEAT_COUNT = 125
+
+
 class ClickHouseFilmGraphRepository:
     def __init__(self, settings: Any) -> None:
         self._settings = settings
@@ -38,12 +45,36 @@ class ClickHouseFilmGraphRepository:
 
     def bootstrap(self) -> None:
         # Connect against the default database while creating the configured
-        # application database.  Passing a not-yet-created database to the
+        # application database. Passing a not-yet-created database to the
         # HTTP client can make the first CREATE DATABASE command fail.
         client = self._client or self._create_client("__default__")
         self._client = client
         init_dir = Path(__file__).resolve().parents[3] / "infra" / "clickhouse" / "init"
-        self._execute_sql_file(client, init_dir / "001_schema.sql")
+        database = _quote_identifier(self._settings.database)
+        if bool(getattr(self._settings, "create_database", True)):
+            try:
+                client.command(f"CREATE DATABASE IF NOT EXISTS {database}", use_database=False)
+            except Exception as exc:
+                mode = str(getattr(self._settings, "database_mode", "local"))
+                raise RuntimeError(
+                    f"Unable to create ClickHouse {mode} database '{self._settings.database}'. "
+                    "Create it in ClickHouse or grant CREATE DATABASE to the configured user."
+                ) from exc
+
+        if not bool(getattr(self._settings, "bootstrap_schema", True)):
+            # A pre-provisioned database can opt out of DDL at startup.
+            client.database = self._settings.database
+            return
+
+        # The checked-in init files are also used by Docker and intentionally
+        # say ``filmgraph``. Rewrite only their database directives here so the
+        # same schema/seed can initialize a Cloud database named ``clio``.
+        self._execute_sql_file(
+            client,
+            init_dir / "001_schema.sql",
+            self._settings.database,
+            create_database=bool(getattr(self._settings, "create_database", True)),
+        )
         client.database = self._settings.database
         # A previous local build may have seeded a production-shaped graph.
         # Upgrade that demo database in place so the visible workspace cannot
@@ -59,15 +90,60 @@ class ClickHouseFilmGraphRepository:
         except Exception:
             stale = False
         try:
-            beat_rows = self._query_rows("SELECT count() AS count FROM graph_nodes WHERE kind = 'beat'")
-            # Sixteen child beats are part of the current local script seed.
-            if not beat_rows or int(beat_rows[0]["count"]) != 16:
+            beat_rows = self._query_rows(
+                "SELECT count() AS count FROM graph_nodes WHERE kind = 'beat' AND film_id = %(film_id)s",
+                {"film_id": DEMO_FILM_ID},
+            )
+            scene_rows = self._query_rows(
+                "SELECT count() AS count FROM graph_nodes WHERE kind = 'scene' AND film_id = %(film_id)s",
+                {"film_id": DEMO_FILM_ID},
+            )
+            version_rows = self._query_rows(
+                "SELECT count() AS count FROM graph_nodes WHERE film_id = %(film_id)s AND metadata LIKE %(version)s",
+                {"film_id": DEMO_FILM_ID, "version": f"%{DEMO_STORYBOARD_VERSION}%"},
+            )
+            if (
+                not beat_rows
+                or int(beat_rows[0]["count"]) != DEMO_BEAT_COUNT
+                or not scene_rows
+                or int(scene_rows[0]["count"]) != DEMO_SCENE_COUNT
+                or not version_rows
+                or int(version_rows[0]["count"]) < DEMO_SCENE_COUNT
+            ):
                 stale = True
         except Exception:
             stale = True
-        if not counts or int(counts[0]["count"]) != 1 or stale:
-            self._clear_local_demo_tables(client)
-            self._execute_sql_file(client, init_dir / "002_seed.sql")
+        graph_rows = self._query_rows("SELECT count() AS count FROM graph_nodes")
+        pipeline_count = int(counts[0]["count"]) if counts else 0
+        graph_count = int(graph_rows[0]["count"]) if graph_rows else 0
+        needs_seed = pipeline_count != 1 or graph_count == 0 or stale
+        if bool(getattr(self._settings, "seed_demo", True)) and needs_seed:
+            # Seed an empty database on first run. A stale Cloud database is
+            # migrated only when every graph row belongs to the synthetic
+            # demo scope; unrelated Cloud projects are never truncated.
+            if pipeline_count == 0 and graph_count == 0:
+                self._execute_sql_file(
+                    client,
+                    init_dir / "002_seed.sql",
+                    self._settings.database,
+                    create_database=bool(getattr(self._settings, "create_database", True)),
+                )
+            elif self._can_reset_demo:
+                self._clear_local_demo_tables(client)
+                self._execute_sql_file(
+                    client,
+                    init_dir / "002_seed.sql",
+                    self._settings.database,
+                    create_database=bool(getattr(self._settings, "create_database", True)),
+                )
+            elif self._demo_scope_is_only_local_fixture():
+                self._clear_cloud_demo_scope()
+                self._execute_sql_file(
+                    client,
+                    init_dir / "002_seed.sql",
+                    self._settings.database,
+                    create_database=bool(getattr(self._settings, "create_database", True)),
+                )
         client.database = self._settings.database
 
     def _migrate_script_columns(self, client: Any) -> None:
@@ -97,7 +173,7 @@ class ClickHouseFilmGraphRepository:
                 pass
 
     def _clear_local_demo_tables(self, client: Any) -> None:
-        if self._settings.database != "filmgraph":
+        if not self._can_reset_demo:
             return
         for table in (
             "films",
@@ -120,6 +196,108 @@ class ClickHouseFilmGraphRepository:
             except Exception:
                 pass
 
+    def _demo_scope_is_only_local_fixture(self) -> bool:
+        """Allow the requested Titanic upgrade only for the synthetic demo.
+
+        Cloud is treated as shared by default. We migrate automatically only
+        when every existing graph row belongs to the explicitly synthetic
+        ``demo-feature`` film. User-authored rows created inside this demo
+        still belong to that bounded scope; any other film ID blocks reset.
+        """
+        try:
+            rows = self._query_rows(
+                "SELECT count() AS total, "
+                "countIf(film_id = %(film_id)s) AS demo "
+                "FROM graph_nodes",
+                {"film_id": DEMO_FILM_ID},
+            )
+            if not rows:
+                return False
+            total = int(rows[0].get("total", 0))
+            demo = int(rows[0].get("demo", 0))
+            return total > 0 and total == demo
+        except Exception:
+            return False
+
+    def _clear_cloud_demo_scope(self) -> None:
+        """Remove only rows belonging to the synthetic demo before reseeding."""
+        client = self._client_or_raise()
+
+        def quoted(values: List[Any]) -> str:
+            return ", ".join("'" + str(value).replace("'", "") + "'" for value in values)
+
+        node_rows = self._query_rows(
+            "SELECT toString(id) AS id FROM graph_nodes WHERE film_id = %(film_id)s",
+            {"film_id": DEMO_FILM_ID},
+        )
+        node_ids = [row["id"] for row in node_rows if row.get("id")]
+        workflow_rows = self._query_rows(
+            "SELECT toString(id) AS id FROM workflows WHERE name = %(name)s",
+            {"name": DEMO_FILM_ID},
+        )
+        workflow_ids = [row["id"] for row in workflow_rows if row.get("id")]
+        run_ids: List[str] = []
+        if workflow_ids:
+            run_rows = self._query_rows(
+                f"SELECT toString(id) AS id FROM agent_runs WHERE workflow_id IN ({quoted(workflow_ids)})"
+            )
+            run_ids = [row["id"] for row in run_rows if row.get("id")]
+        variant_rows = self._query_rows(
+            "SELECT toString(id) AS id FROM delivery_variants WHERE film_id = %(film_id)s",
+            {"film_id": DEMO_FILM_ID},
+        )
+        variant_ids = [row["id"] for row in variant_rows if row.get("id")]
+
+        statements: List[str] = []
+        if node_ids:
+            values = quoted(node_ids)
+            statements.extend([
+                f"ALTER TABLE graph_edges DELETE WHERE source_id IN ({values}) OR target_id IN ({values}) SETTINGS mutations_sync = 1",
+                f"ALTER TABLE graph_nodes DELETE WHERE id IN ({values}) SETTINGS mutations_sync = 1",
+            ])
+        if workflow_ids:
+            values = quoted(workflow_ids)
+            statements.extend([
+                f"ALTER TABLE workflow_events DELETE WHERE workflow_id IN ({values}) SETTINGS mutations_sync = 1",
+                f"ALTER TABLE delivery_records DELETE WHERE workflow_id IN ({values}) SETTINGS mutations_sync = 1",
+                f"ALTER TABLE workflows DELETE WHERE id IN ({values}) SETTINGS mutations_sync = 1",
+            ])
+        if run_ids:
+            values = quoted(run_ids)
+            statements.append(f"ALTER TABLE agent_events DELETE WHERE run_id IN ({values}) SETTINGS mutations_sync = 1")
+            statements.append(f"ALTER TABLE agent_runs DELETE WHERE id IN ({values}) SETTINGS mutations_sync = 1")
+        if variant_ids:
+            values = quoted(variant_ids)
+            statements.append(f"ALTER TABLE delivery_conflicts DELETE WHERE variant_id IN ({values}) SETTINGS mutations_sync = 1")
+        for table, where in (
+            ("films", "id = 'demo-feature'"),
+            ("revisions", "film_id = 'demo-feature'"),
+            ("pipeline_stages", "name = 'Script'"),
+            ("impact_assessments", "film_id = 'demo-feature'"),
+            ("runtime_surgery_proposals", "film_id = 'demo-feature'"),
+            ("delivery_variants", "film_id = 'demo-feature'"),
+        ):
+            statements.append(f"ALTER TABLE {table} DELETE WHERE {where} SETTINGS mutations_sync = 1")
+        failures: List[str] = []
+        for statement in statements:
+            try:
+                client.command(statement)
+            except Exception as exc:
+                failures.append(f"{statement}: {exc}")
+        if failures:
+            # Never seed on top of a partially deleted scope: duplicate rows
+            # would make the append-only snapshot ambiguous. Surface the
+            # first provider error so startup falls back with a useful cause.
+            raise RuntimeError("Cloud demo migration failed: " + failures[0])
+
+    @property
+    def _can_reset_demo(self) -> bool:
+        """Destructive demo resets are local-only and opt-in."""
+        return (
+            str(getattr(self._settings, "database_mode", "local")).lower() == "local"
+            and bool(getattr(self._settings, "allow_demo_reset", False))
+        )
+
     def _create_client(self, database: str):
         try:
             import clickhouse_connect
@@ -132,6 +310,10 @@ class ClickHouseFilmGraphRepository:
             password=self._settings.password,
             database=database,
             secure=self._settings.secure,
+            # The FastAPI repository is shared by worker threads. No query in
+            # this adapter relies on temporary/session state, so avoid a
+            # single auto-generated HTTP session rejecting concurrent reads.
+            autogenerate_session_id=False,
         )
 
     def list_pipeline_stages(self) -> List[PipelineStageDefinition]:
@@ -697,7 +879,7 @@ class ClickHouseFilmGraphRepository:
             status = WorkflowStatus.running.value
         elif kind == AgentEventKind.completed:
             status = WorkflowStatus.complete.value
-            summary = "simulation complete"
+            summary = "agent run complete"
         elif kind == AgentEventKind.failed:
             status = WorkflowStatus.failed.value
         if status is not None:
@@ -726,7 +908,13 @@ class ClickHouseFilmGraphRepository:
             params,
         )
 
-    def _execute_sql_file(self, client: Any, path: Path) -> None:
+    def _execute_sql_file(
+        self,
+        client: Any,
+        path: Path,
+        database_override: Optional[str] = None,
+        create_database: bool = True,
+    ) -> None:
         if not path.exists():
             return
         buffer: List[str] = []
@@ -738,9 +926,65 @@ class ClickHouseFilmGraphRepository:
             if stripped.endswith(";"):
                 sql = "\n".join(buffer).strip().rstrip(";")
                 if sql:
-                    client.command(sql, use_database=False)
+                    sql = _override_database_directives(sql, database_override, create_database=create_database)
+                    if sql.strip():
+                        self._execute_sql_statement(client, sql, database_override)
                 buffer = []
         if buffer:
             sql = "\n".join(buffer).strip().rstrip(";")
             if sql:
-                client.command(sql, use_database=False)
+                sql = _override_database_directives(sql, database_override, create_database=create_database)
+                if sql.strip():
+                    self._execute_sql_statement(client, sql, database_override)
+
+    @staticmethod
+    def _execute_sql_statement(client: Any, sql: str, database_override: Optional[str]) -> None:
+        """Execute one init statement against the requested database.
+
+        ``clickhouse-connect`` sends the database as an HTTP query parameter;
+        a standalone ``USE`` statement is not a reliable session switch when
+        session IDs are disabled. Keep CREATE DATABASE/USE on the default
+        connection, then set the client's database before every DDL/INSERT so
+        Cloud bootstrap cannot silently seed the default database.
+        """
+        first_word = sql.lstrip().split(None, 2)[:2]
+        is_database_directive = bool(first_word and first_word[0].upper() == "CREATE" and len(first_word) > 1 and first_word[1].upper() == "DATABASE") or (first_word and first_word[0].upper() == "USE")
+        if database_override and not is_database_directive:
+            client.database = database_override
+        client.command(sql, use_database=not is_database_directive)
+        if database_override and first_word and first_word[0].upper() == "USE":
+            client.database = database_override
+
+
+_DATABASE_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _quote_identifier(value: str) -> str:
+    """Quote a configured ClickHouse database after strict validation."""
+    if not _DATABASE_IDENTIFIER.fullmatch(value):
+        raise ValueError("ClickHouse database must contain only letters, numbers, and underscores")
+    return f"`{value}`"
+
+
+def _override_database_directives(
+    sql: str,
+    database_override: Optional[str],
+    *,
+    create_database: bool = True,
+) -> str:
+    if not database_override:
+        return sql
+    quoted = _quote_identifier(database_override)
+    # Only replace the two standalone directives at the beginning of the
+    # checked-in init files.  This avoids changing data such as local://filmgraph
+    # artifact URIs in INSERT statements.
+    create_pattern = r"CREATE\s+DATABASE\s+IF\s+NOT\s+EXISTS\s+filmgraph\s*;?"
+    sql = re.sub(
+        create_pattern,
+        f"CREATE DATABASE IF NOT EXISTS {quoted}" if create_database else "",
+        sql,
+        count=1,
+        flags=re.IGNORECASE,
+    )
+    sql = re.sub(r"\bUSE\s+filmgraph\b", f"USE {quoted}", sql, count=1, flags=re.IGNORECASE)
+    return sql

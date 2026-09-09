@@ -53,7 +53,10 @@ export function backendBaseUrl(): string {
   return (env || 'http://127.0.0.1:8000').replace(/\/$/, '')
 }
 
-export async function backendFetch<T>(path: string, init?: RequestInit, timeoutMs = 1400): Promise<T> {
+// ClickHouse Cloud has real network/analytics latency; the previous 1.4s
+// budget made a healthy Cloud response look like a local fallback. Keep a
+// bounded timeout, but allow the same-origin bridge to wait for the backend.
+export async function backendFetch<T>(path: string, init?: RequestInit, timeoutMs = 15000): Promise<T> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -574,7 +577,7 @@ function normalizeRemoteProposal(row: Record<string, unknown>, index: number, fa
   const resultSeconds = numberValue(row.result_seconds) ?? numberValue(row.resultSeconds) ?? (isCut ? 7440 : 7680)
   const confidence = numberValue(row.confidence)
   return {
-    id: isCut ? 'cut-sc47' : /reshoot/i.test(label) ? 'reshoot-vehicle' : `proposal-${index + 1}`,
+    id: isCut ? 'cut-sc17' : /reshoot/i.test(label) ? 'reshoot-titanic' : `proposal-${index + 1}`,
     label,
     deltaMinutes: Math.round(deltaSeconds / 60),
     resultMinutes: Math.round(resultSeconds / 60),
@@ -682,7 +685,7 @@ function approvalsFromEvents(events: WorkflowEvent[]) {
 }
 
 export async function fetchWorkspaceSnapshot(filmId: string, revisionId: string): Promise<WorkspaceSnapshot> {
-  const payload = await backendFetch<BackendWorkspacePayload>(`/workspace?filmId=${encodeURIComponent(filmId)}&revisionId=${encodeURIComponent(revisionId)}`)
+  const payload = await backendFetch<BackendWorkspacePayload>(`/workspace?filmId=${encodeURIComponent(filmId)}&revisionId=${encodeURIComponent(revisionId)}`, undefined, 30000)
   return normalizeWorkspacePayload(payload)
 }
 

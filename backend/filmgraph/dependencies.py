@@ -13,6 +13,7 @@ from typing import Any, List
 from uuid import UUID
 
 from filmgraph.integrations.mcp import McpFirstFilmGraphService, build_mcp_client
+from filmgraph.titanic_storyboard import TITANIC_SCENES
 from filmgraph.models import (
     GraphEdge,
     GraphNode,
@@ -180,9 +181,15 @@ _SCENES: tuple[dict[str, Any], ...] = (
     },
 )
 
+# Keep the old literal above available for backwards-compatible imports, but
+# make the active offline repository use the canonical full Titanic map.
+_SCENES = TITANIC_SCENES
+
 
 def _scene_uuid(number: str) -> UUID:
-    return UUID(f"40101010-1010-1010-1010-1010101010{int(number):02d}")
+    # Leave enough room for two-digit scene numbers without exceeding UUID
+    # width, and keep the generated IDs stable across refreshes.
+    return UUID(f"40101010-1010-1010-1010-{1000 + int(number):012d}")
 
 
 def _beat_uuid(scene_number: str, beat_number: int) -> UUID:
@@ -194,14 +201,19 @@ def _seed_graph_nodes() -> List[GraphNode]:
     source = GraphNode(
         id=UUID("40101010-1010-1010-1010-101010101001"),
         kind=GraphNodeKind.script,
-        label="V5 · SC 47",
+        label="V5 · TITANIC / COLLISION",
         sequence=0,
         stage_name="Script",
         status="breaking",
         film_id=FILM_ID,
         revision_id=REVISION_ID,
-        script_text="Mara and Jon argue in a moving car; the key changes hands.",
-        metadata={"role": "revision_source", "before_text": "Mara and Jon argue inside the restaurant; the key changes hands."},
+        script_text="The ship strikes the iceberg; every later escape and survival beat inherits the impact.",
+        metadata={
+            "role": "revision_source",
+            "dataset": "LOCAL DEMO · TITANIC",
+            "before_text": "The ship holds course in calm water; passengers remain unaware of the iceberg ahead.",
+            "storyboard_version": "titanic-v1",
+        },
         provenance=Provenance(source="computed", transport="memory", adapter="script-seed", runtime_mode="simulation"),
     )
     nodes = [source]
@@ -225,7 +237,12 @@ def _seed_graph_nodes() -> List[GraphNode]:
                 start_seconds=start,
                 end_seconds=end,
                 duration_seconds=end - start,
-                metadata={"role": "scene", "dataset": "LOCAL DEMO", "child_count": len(scene.get("beats", []))},
+                metadata={
+                    "role": "scene",
+                    "dataset": "LOCAL DEMO · TITANIC",
+                    "child_count": len(scene.get("beats", [])),
+                    "storyboard_version": "titanic-v1",
+                },
                 provenance=Provenance(source="computed", transport="memory", adapter="script-seed", runtime_mode="simulation"),
             )
         )
@@ -239,9 +256,9 @@ def _seed_graph_nodes() -> List[GraphNode]:
                     id=_beat_uuid(str(scene["number"]), beat_number),
                     kind=GraphNodeKind.beat,
                     label=str(beat["title"]),
-                    # ClickHouse stores sequence as UInt8; keep room for up to
-                    # nineteen child beats per scene while staying <= 255.
-                    sequence=index * 20 + beat_number,
+                    # ClickHouse stores sequence as UInt8; five beats per
+                    # scene keep the full 25-scene map <= 255.
+                    sequence=index * 5 + beat_number,
                     stage_name="Script",
                     status=str(scene["status"]),
                     film_id=FILM_ID,
@@ -255,7 +272,12 @@ def _seed_graph_nodes() -> List[GraphNode]:
                     start_seconds=beat_start,
                     end_seconds=beat_end,
                     duration_seconds=beat_end - beat_start,
-                    metadata={"role": "beat", "dataset": "LOCAL DEMO", "parent_scene": str(scene["number"])},
+                    metadata={
+                        "role": "beat",
+                        "dataset": "LOCAL DEMO · TITANIC",
+                        "parent_scene": str(scene["number"]),
+                        "storyboard_version": "titanic-v1",
+                    },
                     provenance=Provenance(source="computed", transport="memory", adapter="script-seed", runtime_mode="simulation"),
                 )
             )
@@ -272,25 +294,26 @@ def _seed_graph_edges(nodes: List[GraphNode]) -> List[GraphEdge]:
     def add_edge(index: int, source_id: UUID, target_id: UUID, relation: str, tone: str = "understood", kind: str = "backbone") -> None:
         edges.append(
             GraphEdge(
-                id=UUID(f"50101010-1010-1010-1010-1010101010{index:02d}"),
+                id=UUID(f"50101010-1010-1010-1010-{index:012d}"),
                 source_id=source_id,
                 target_id=target_id,
                 relation=relation,
                 weight=1.0,
                 confidence=0.98,
-                metadata={"tone": tone, "kind": kind, "dataset": "LOCAL DEMO"},
+                metadata={"tone": tone, "kind": kind, "dataset": "LOCAL DEMO · TITANIC", "storyboard_version": "titanic-v1"},
                 provenance=Provenance(source="computed", transport="memory", adapter="script-seed", runtime_mode="simulation"),
             )
         )
 
-    add_edge(1, source.id, by_number["47"].id, "revises", "breaking")
+    # The active revision is the iceberg collision at scene 17.
+    add_edge(1, source.id, by_number["17"].id, "revises", "breaking")
     for index, left in enumerate(_SCENES[:-1], start=2):
         right = _SCENES[index - 1]
         add_edge(index, by_number[str(left["number"])].id, by_number[str(right["number"])].id, "follows", str(right["status"]))
-    add_edge(10, by_number["42"].id, by_number["47"].id, "sets_up")
-    add_edge(11, by_number["44"].id, by_number["47"].id, "motivates")
-    add_edge(12, by_number["47"].id, by_number["48"].id, "pays_off", "breaking")
-    next_index = 13
+    add_edge(len(_SCENES) + 2, by_number["01"].id, by_number["17"].id, "sets_up")
+    add_edge(len(_SCENES) + 3, by_number["16"].id, by_number["17"].id, "motivates")
+    add_edge(len(_SCENES) + 4, by_number["17"].id, by_number["18"].id, "pays_off", "breaking")
+    next_index = len(_SCENES) + 5
     for scene in _SCENES:
         parent = by_number[str(scene["number"])]
         previous: UUID | None = None

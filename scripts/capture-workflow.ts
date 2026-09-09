@@ -15,7 +15,7 @@ const browser = await chromium.launch({ headless: true, ...(executablePath ? { e
 await mkdir(outputDir, { recursive: true })
 
 const desktop = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
-await desktop.goto(`${baseURL.replace(/\/$/, '')}/`, { waitUntil: 'networkidle' })
+await desktop.goto(`${baseURL.replace(/\/$/, '')}/workspace`, { waitUntil: 'networkidle' })
 await desktop.getByTestId('workspace').waitFor({ state: 'visible' })
 await desktop.waitForFunction(() => document.querySelector('[data-testid="workspace"]')?.getAttribute('data-hydrated') === 'true')
 
@@ -49,7 +49,7 @@ await shot('01-workspace-loaded.png')
 await desktop.getByRole('button', { name: 'TRACE PATH', exact: true }).click()
 await shot('02-revision-trace.png')
 await desktop.getByRole('button', { name: 'SCENES', exact: true }).click()
-await desktop.getByRole('button', { name: /SC 47/ }).click()
+await desktop.getByRole('button', { name: /SC 17/ }).click()
 await desktop.getByRole('button', { name: 'SHOW MAP', exact: true }).click()
 await shot('03-impact-inspector.png')
 
@@ -85,14 +85,14 @@ await shot('08-provenance-complete.png')
 
 // Git-backed revision proof: public fixture, read-only load, no apply side effect.
 await desktop.getByRole('button', { name: 'SCRIPT GIT', exact: true }).click()
-await desktop.getByLabel('GITHUB FILE OR REPOSITORY').fill('https://github.com/mattdaly/Fountain.js/blob/master/samples/bigfish.fountain')
+await desktop.getByLabel('GITHUB FILE OR REPOSITORY').fill('https://github.com/owner/repository/blob/main/script.fountain')
 await desktop.getByRole('button', { name: 'LOAD', exact: true }).click()
 await desktop.getByText(/^LOADED .+ · \d+ SCENES$/).waitFor({ state: 'visible', timeout: 20000 })
 await shot('10-script-git-loaded.png')
 await desktop.close()
 
 const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' })
-await mobile.goto(`${baseURL.replace(/\/$/, '')}/`, { waitUntil: 'networkidle' })
+await mobile.goto(`${baseURL.replace(/\/$/, '')}/workspace`, { waitUntil: 'networkidle' })
 await mobile.getByTestId('workspace').waitFor({ state: 'visible' })
 await mobile.waitForFunction(() => document.querySelector('[data-testid="workspace"]')?.getAttribute('data-hydrated') === 'true')
 await enterMap(mobile)

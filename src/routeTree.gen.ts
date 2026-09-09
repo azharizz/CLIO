@@ -22,6 +22,7 @@ import { Route as ApiProvenanceDeliveryIdRouteImport } from './routes/api.proven
 import { Route as ApiRuntimeProposalsRouteImport } from './routes/api.runtime.proposals'
 import { Route as ApiScriptGitApplyRouteImport } from './routes/api.script-git.apply'
 import { Route as ApiScriptGitLoadRouteImport } from './routes/api.script-git.load'
+import { Route as ApiScriptGitRevertRouteImport } from './routes/api.script-git.revert'
 import { Route as ApiTestResetRouteImport } from './routes/api.test.reset'
 import { Route as ApiAgentRunsRunIdEventsRouteImport } from './routes/api.agent-runs.$runId.events'
 import { Route as ApiDeliveryVariantIdApproveRouteImport } from './routes/api.delivery.$variantId.approve'
@@ -94,6 +95,11 @@ const ApiScriptGitLoadRoute = ApiScriptGitLoadRouteImport.update({
   path: '/api/script-git/load',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiScriptGitRevertRoute = ApiScriptGitRevertRouteImport.update({
+  id: '/api/script-git/revert',
+  path: '/api/script-git/revert',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTestResetRoute = ApiTestResetRouteImport.update({
   id: '/api/test/reset',
   path: '/api/test/reset',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/api/runtime/proposals': typeof ApiRuntimeProposalsRoute
   '/api/script-git/apply': typeof ApiScriptGitApplyRoute
   '/api/script-git/load': typeof ApiScriptGitLoadRoute
+  '/api/script-git/revert': typeof ApiScriptGitRevertRoute
   '/api/test/reset': typeof ApiTestResetRoute
   '/api/agent-runs/$runId/events': typeof ApiAgentRunsRunIdEventsRoute
   '/api/delivery/$variantId/approve': typeof ApiDeliveryVariantIdApproveRoute
@@ -162,6 +169,7 @@ export interface FileRoutesByTo {
   '/api/runtime/proposals': typeof ApiRuntimeProposalsRoute
   '/api/script-git/apply': typeof ApiScriptGitApplyRoute
   '/api/script-git/load': typeof ApiScriptGitLoadRoute
+  '/api/script-git/revert': typeof ApiScriptGitRevertRoute
   '/api/test/reset': typeof ApiTestResetRoute
   '/api/agent-runs/$runId/events': typeof ApiAgentRunsRunIdEventsRoute
   '/api/delivery/$variantId/approve': typeof ApiDeliveryVariantIdApproveRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   '/api/runtime/proposals': typeof ApiRuntimeProposalsRoute
   '/api/script-git/apply': typeof ApiScriptGitApplyRoute
   '/api/script-git/load': typeof ApiScriptGitLoadRoute
+  '/api/script-git/revert': typeof ApiScriptGitRevertRoute
   '/api/test/reset': typeof ApiTestResetRoute
   '/api/agent-runs/$runId/events': typeof ApiAgentRunsRunIdEventsRoute
   '/api/delivery/$variantId/approve': typeof ApiDeliveryVariantIdApproveRoute
@@ -207,6 +216,7 @@ export interface FileRouteTypes {
     | '/api/runtime/proposals'
     | '/api/script-git/apply'
     | '/api/script-git/load'
+    | '/api/script-git/revert'
     | '/api/test/reset'
     | '/api/agent-runs/$runId/events'
     | '/api/delivery/$variantId/approve'
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/api/runtime/proposals'
     | '/api/script-git/apply'
     | '/api/script-git/load'
+    | '/api/script-git/revert'
     | '/api/test/reset'
     | '/api/agent-runs/$runId/events'
     | '/api/delivery/$variantId/approve'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/api/runtime/proposals'
     | '/api/script-git/apply'
     | '/api/script-git/load'
+    | '/api/script-git/revert'
     | '/api/test/reset'
     | '/api/agent-runs/$runId/events'
     | '/api/delivery/$variantId/approve'
@@ -271,6 +283,7 @@ export interface RootRouteChildren {
   ApiRuntimeProposalsRoute: typeof ApiRuntimeProposalsRoute
   ApiScriptGitApplyRoute: typeof ApiScriptGitApplyRoute
   ApiScriptGitLoadRoute: typeof ApiScriptGitLoadRoute
+  ApiScriptGitRevertRoute: typeof ApiScriptGitRevertRoute
   ApiTestResetRoute: typeof ApiTestResetRoute
   ApiDeliveryVariantIdApproveRoute: typeof ApiDeliveryVariantIdApproveRoute
   ApiDeliveryVariantIdResolveRoute: typeof ApiDeliveryVariantIdResolveRoute
@@ -370,6 +383,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiScriptGitLoadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/script-git/revert': {
+      id: '/api/script-git/revert'
+      path: '/api/script-git/revert'
+      fullPath: '/api/script-git/revert'
+      preLoaderRoute: typeof ApiScriptGitRevertRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/test/reset': {
       id: '/api/test/reset'
       path: '/api/test/reset'
@@ -453,6 +473,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiRuntimeProposalsRoute: ApiRuntimeProposalsRoute,
   ApiScriptGitApplyRoute: ApiScriptGitApplyRoute,
   ApiScriptGitLoadRoute: ApiScriptGitLoadRoute,
+  ApiScriptGitRevertRoute: ApiScriptGitRevertRoute,
   ApiTestResetRoute: ApiTestResetRoute,
   ApiDeliveryVariantIdApproveRoute: ApiDeliveryVariantIdApproveRoute,
   ApiDeliveryVariantIdResolveRoute: ApiDeliveryVariantIdResolveRoute,
