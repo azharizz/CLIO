@@ -275,6 +275,7 @@ export function normalizeWorkspacePayload(payload: BackendWorkspacePayload, fall
     ? { ...baseSource, detail: `${baseSource.detail ?? ''} · ${payload.provider_error.message}`.replace(/^ · /, '') }
     : baseSource
   next.dataSource = dataSource
+  next.runtimeMode = payload.runtime?.runtime_mode === 'live' ? 'live' : 'simulation'
   if (payload.provider_error?.message) {
     next.providerError = {
       attemptedSource: payload.provider_error.attempted_source ?? 'clickhouse_mcp',

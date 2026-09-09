@@ -305,6 +305,8 @@ export interface WorkspaceSnapshot {
     fallbackSource: string
     message: string
   }
+  /** Active agent runtime selected by the local backend configuration. */
+  runtimeMode?: 'simulation' | 'live'
   selectedNodeId: string
 }
 

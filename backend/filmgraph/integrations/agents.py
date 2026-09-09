@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
+import urllib.request
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any, Protocol
@@ -178,6 +180,118 @@ class SimulatedAgentProvider:
 
 
 @dataclass(frozen=True)
+class OpenRouterAdkAgentProvider:
+    """Real tool-using provider behind the Google ADK-compatible agent seam.
+
+    OpenRouter exposes an OpenAI-compatible chat endpoint, so the local agent
+    can use DeepSeek now while retaining the same event/tool contract that a
+    Vertex Gemini ADK adapter will implement later.
+    """
+
+    api_key: str
+    url: str
+    model: str
+    runtime_mode: str = "live"
+
+    def _request(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> dict[str, Any]:
+        body = json.dumps({
+            "model": self.model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": "auto",
+            "temperature": 0.2,
+        }).encode("utf-8")
+        request = urllib.request.Request(
+            self.url,
+            data=body,
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "HTTP-Referer": "http://127.0.0.1:3000",
+                "X-Title": "CLIO local agent",
+            },
+        )
+        with urllib.request.urlopen(request, timeout=25) as response:
+            decoded = json.loads(response.read().decode("utf-8"))
+        if not isinstance(decoded, dict) or not isinstance(decoded.get("choices"), list) or not decoded["choices"]:
+            raise RuntimeError(f"provider returned no choices: {str(decoded)[:300]}")
+        message = decoded["choices"][0].get("message")
+        if not isinstance(message, dict):
+            raise RuntimeError("provider response did not include a message")
+        return message
+
+    @staticmethod
+    def _tool_result(name: str, arguments: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+        nodes = [node for node in context.get("graph_nodes", []) if isinstance(node, dict)]
+        edges = [edge for edge in context.get("graph_edges", []) if isinstance(edge, dict)]
+        focus = str(arguments.get("node_id") or context.get("focus_node") or "")
+        if focus and not any(str(node.get("id")) == focus for node in nodes):
+            scene = focus.removeprefix("scene-").removeprefix("SC ").strip()
+            focus = next((str(node.get("id")) for node in nodes if str(node.get("scene_number")) == scene), focus)
+        if name == "get_node_impact":
+            adjacent = [edge for edge in edges if str(edge.get("source_id")) == focus or str(edge.get("target_id")) == focus]
+            ids = {focus} | {str(edge.get("source_id")) for edge in adjacent} | {str(edge.get("target_id")) for edge in adjacent}
+            return {"focus_node": focus, "nodes": [node for node in nodes if str(node.get("id")) in ids], "relations": adjacent}
+        if name == "get_lineage":
+            incoming = {str(edge.get("target_id")): str(edge.get("source_id")) for edge in edges}
+            chain: list[str] = []
+            current = focus
+            while current and current not in chain:
+                chain.append(current)
+                current = incoming.get(current, "")
+            return {"lineage": [node for node in nodes if str(node.get("id")) in chain]}
+        if name == "get_timing":
+            durations = [int(node.get("duration_seconds") or 0) for node in nodes]
+            target = next((node for node in nodes if str(node.get("id")) == focus), {})
+            return {"focus_duration_seconds": target.get("duration_seconds"), "film_duration_seconds": max((int(node.get("end_seconds") or 0) for node in nodes), default=0), "scene_count": sum(node.get("kind") == "scene" for node in nodes)}
+        if name == "get_revision":
+            return {"revision": "V5", "change": "INTERIOR RESTAURANT → MOVING CAR", "source": "LOCAL DEMO"}
+        raise ValueError(f"unknown agent tool: {name}")
+
+    async def start_run(self, context: dict[str, Any]) -> AsyncIterator[AgentEvent]:
+        run_id = UUID(str(context["run_id"]))
+        prompt = str(context.get("prompt") or "Inspect the active script revision.")
+        provenance = Provenance(source="gemini_adk", transport="openrouter", adapter="adk-tool-agent", runtime_mode="live", model_name=self.model)
+        yield AgentEvent(run_id=run_id, kind=AgentEventKind.progress, message="phase:narrative", payload={"phase": "narrative", "notes": "Real agent reading the screenplay graph and narration."}, provenance=provenance, occurred_at=utcnow())
+        tools = [
+            {"type": "function", "function": {"name": "get_node_impact", "description": "Read the directly connected impact neighborhood for a node.", "parameters": {"type": "object", "properties": {"node_id": {"type": "string"}}, "required": ["node_id"]}}},
+            {"type": "function", "function": {"name": "get_lineage", "description": "Read upstream script lineage for a node.", "parameters": {"type": "object", "properties": {"node_id": {"type": "string"}}, "required": ["node_id"]}}},
+            {"type": "function", "function": {"name": "get_timing", "description": "Read exact start/end/duration timing for the active graph.", "parameters": {"type": "object", "properties": {"node_id": {"type": "string"}}, "required": ["node_id"]}}},
+            {"type": "function", "function": {"name": "get_revision", "description": "Read the active revision metadata.", "parameters": {"type": "object", "properties": {}}}},
+        ]
+        compact_context = {"prompt": prompt, "focus_node": context.get("focus_node"), "graph_nodes": context.get("graph_nodes", []), "graph_edges": context.get("graph_edges", [])}
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": "You are CLIO, a screenplay continuity and lineage agent. Use tools before recommending. Return concise, actionable analysis with affected scenes, timing deltas, and a human approval step. Never claim to have changed data."},
+            {"role": "user", "content": json.dumps(compact_context, ensure_ascii=False)},
+        ]
+        final_text = ""
+        # Two rounds are enough for a genuine tool-using turn (plan/read, then
+        # synthesize) while keeping the local SSE interaction responsive.
+        for _ in range(2):
+            message = await asyncio.to_thread(self._request, messages, tools)
+            tool_calls = message.get("tool_calls") if isinstance(message.get("tool_calls"), list) else []
+            messages.append(message)
+            if not tool_calls:
+                final_text = str(message.get("content") or "No recommendation returned.")
+                break
+            for call in tool_calls:
+                function = call.get("function") if isinstance(call, dict) else {}
+                name = str(function.get("name") or "")
+                try:
+                    arguments = json.loads(function.get("arguments") or "{}")
+                except json.JSONDecodeError:
+                    arguments = {}
+                yield AgentEvent(run_id=run_id, kind=AgentEventKind.tool_call, message="phase:graph", payload={"phase": "graph", "tool": name, "arguments": arguments, "notes": f"Calling read-only graph tool: {name}."}, provenance=provenance, occurred_at=utcnow())
+                result = self._tool_result(name, arguments, context)
+                yield AgentEvent(run_id=run_id, kind=AgentEventKind.tool_result, message="phase:analytics", payload={"phase": "analytics", "tool": name, "result": result, "notes": "Tool result returned to the agent."}, provenance=provenance, occurred_at=utcnow())
+                messages.append({"role": "tool", "tool_call_id": call.get("id", name), "content": json.dumps(result, ensure_ascii=False)})
+        yield AgentEvent(run_id=run_id, kind=AgentEventKind.message, message="phase:revision", payload={"phase": "revision", "notes": final_text}, provenance=provenance, occurred_at=utcnow())
+        yield AgentEvent(run_id=run_id, kind=AgentEventKind.completed, message="phase:critic", payload={"phase": "critic", "assessment": "Provider recommendation is a proposal; editorial approval is still required.", "recommendation": final_text}, provenance=provenance, occurred_at=utcnow())
+
+
+@dataclass(frozen=True)
 class GeminiAdkAgentProvider:
     """Explicit seam for the eventual live Gemini/ADK implementation."""
 
@@ -195,6 +309,11 @@ class GeminiAdkAgentProvider:
 def provider_for(mode: str, **credentials: Any) -> AgentProvider:
     normalized = "simulation" if mode == "simulated" else mode
     if normalized == "live":
+        provider_key = credentials.get("provider_key") or credentials.get("api_key")
+        provider_url = credentials.get("provider_url")
+        provider_model = credentials.get("model_name")
+        if provider_key and provider_url and provider_model:
+            return OpenRouterAdkAgentProvider(api_key=str(provider_key), url=str(provider_url), model=str(provider_model))
         return GeminiAdkAgentProvider(
             api_key=credentials.get("api_key"),
             project=credentials.get("project"),

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from filmgraph.dependencies import get_repository
 from filmgraph.integrations.mcp import FakeMcpClient, McpFirstFilmGraphService
 from filmgraph.models import AgentEventKind, DeliveryStatus
@@ -171,3 +173,29 @@ def test_mcp_timeout_marks_direct_clickhouse_fallback():
     assert service.list_pipeline_stages() == []
     assert service.last_source == "direct_clickhouse"
     assert service.last_error == "MCP timeout"
+
+
+def test_mcp_traversal_uses_recursive_read_only_queries():
+    row = {
+        "id": "40101010-1010-1010-1010-101010101047",
+        "kind": "scene",
+        "label": "MOVING CAR — NIGHT",
+        "sequence": 6,
+        "stage_name": "Script",
+        "status": "breaking",
+        "film_id": "demo-feature",
+        "revision_id": "rev-05",
+        "scene_number": "47",
+        "metadata": {},
+    }
+    client = FakeMcpClient({"clickhouse.query": [row]})
+    service = McpFirstFilmGraphService(get_repository(), mcp_client=client, runtime_mode="simulation")
+    node_id = UUID("40101010-1010-1010-1010-101010101047")
+
+    assert service.get_node_impact(node_id)[0].scene_number == "47"
+    assert service.get_lineage(node_id)[0].scene_number == "47"
+    assert service.last_source == "clickhouse_mcp"
+    traversal_calls = [call for call in client.calls if call["tool"] == "clickhouse.query"]
+    assert [call["payload"]["operation"] for call in traversal_calls] == ["node_impact", "lineage"]
+    assert all("WITH RECURSIVE" in call["payload"]["query"] for call in traversal_calls)
+    assert all(call["payload"]["read_only"] is True for call in traversal_calls)

@@ -114,6 +114,7 @@ function AgentOverlay({
   prompt,
   events,
   running,
+  runtimeMode,
   onAction,
   onPrompt,
   onRun,
@@ -124,6 +125,7 @@ function AgentOverlay({
   prompt: string
   events: StreamEvent[]
   running: boolean
+  runtimeMode: 'simulation' | 'live'
   onAction: (action: AgentAction) => void
   onPrompt: (prompt: string) => void
   onRun: () => void
@@ -139,7 +141,7 @@ function AgentOverlay({
       <header className="fg-agent-overlay__head">
         <div>
           <span className="fg-label">AGENTIC RUN</span>
-          <span className="fg-micro">LOCAL SIMULATION · NO AUTO-WRITES</span>
+          <span className="fg-micro">{runtimeMode === 'live' ? 'LIVE PROVIDER · NO AUTO-WRITES' : 'LOCAL SIMULATION · NO AUTO-WRITES'}</span>
         </div>
         <button type="button" className="fg-overlay-close" onClick={onClose} aria-label="Close agent">×</button>
       </header>
@@ -661,6 +663,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
     streamRef.current?.close()
     if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current)
     let runId = ''
+    const runtimeMode = snapshot.runtimeMode === 'live' ? 'live' : 'simulation'
     try {
       const response = await fetch('/api/agent-runs', {
         method: 'POST',
@@ -671,7 +674,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
           stage: 'Script',
           action: agentAction,
           focusNode: selectedNode?.id,
-          runtime_mode: 'simulation',
+          runtime_mode: runtimeMode,
         }),
       })
       if (response.ok) runId = ((await response.json()) as { id?: string }).id ?? ''
@@ -717,7 +720,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
           .reduce((items, event) => addEvent(items, event), current)
       })
       finish()
-    }, 3500)
+    }, runtimeMode === 'live' ? 50000 : 3500)
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -784,7 +787,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
         <div className="fg-topmeta">
           <span className="fg-chip fg-chip--bright">LOCAL DEMO</span>
           <span className={`fg-chip fg-chip--${sourceClass}`}>{sourceLabel}</span>
-          <span className="fg-chip fg-chip--simulation">LOCAL SIMULATION</span>
+          <span className="fg-chip fg-chip--simulation">{snapshot.runtimeMode === 'live' ? 'LIVE PROVIDER' : 'LOCAL SIMULATION'}</span>
         </div>
       </header>
 
@@ -899,6 +902,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
           prompt={agentPrompt}
           events={feed}
           running={agentRunning}
+          runtimeMode={snapshot.runtimeMode ?? 'simulation'}
           onAction={chooseAgentAction}
           onPrompt={setAgentPrompt}
           onRun={() => void runAgent()}

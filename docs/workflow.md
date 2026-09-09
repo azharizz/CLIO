@@ -35,7 +35,7 @@ decide) inside its 02:12 span.
 ## Prerequisites and exact startup
 
 Use Node 22, pnpm, Python 3.13, and Docker Desktop/Engine when exercising
-ClickHouse. From `/Users/azharie/Documents/azhar_project/filmm/filmgraph`:
+ClickHouse. From `/Users/azharie/Documents/azhar_project/filmm/CLIO`:
 
 ```bash
 pnpm install
@@ -80,6 +80,18 @@ the older `FILMGRAPH_*` names continue to work as compatibility aliases.
 
 The fake MCP adapter test covers both the preferred path and fallback without a
 live server. All writes append workflow or agent events through FastAPI.
+
+### Recursive graph reads
+
+Impact and lineage reads use a cycle-safe ClickHouse `WITH RECURSIVE` query when
+the direct repository is active. The CTE carries `depth`, a visited `path`, and
+the film/revision scope through the traversal; it stops at depth 32 and rejects
+cycles. MCP receives the same read-only query first, so a configured MCP server
+can execute the traversal without sending the entire graph to Python. If
+recursive SQL is unavailable, the repository keeps a bounded Python traversal
+as a compatibility fallback. No schema change is required for this behavior:
+`graph_edges.source_id/target_id` and `graph_nodes.id` already provide the
+traversal structure.
 
 ## Complete user workflow
 
@@ -150,13 +162,25 @@ Every read and streamed event carries one of the shared provenance values:
 `direct_clickhouse`, `clickhouse_mcp`, `agent_simulation`, `gemini_adk`,
 `computed`, or `estimate`.
 
-Default local mode:
+Offline mode:
 
 ```text
 AGENT_MODE=simulated
 ```
 
-The future live seam accepts:
+The current local live mode uses the OpenRouter key in `.env` and performs
+real tool calls with the configured DeepSeek model:
+
+```text
+AGENT_MODE=live
+AGENT_PROVIDER_URL=https://openrouter.ai/api/v1/chat/completions
+AGENT_PROVIDER_MODEL=deepseek/deepseek-v4-flash-0731
+AGENT_PROVIDER_API_KEY=...
+```
+
+The adapter is ADK-shaped (narrative → graph tools → analytics → revision →
+critic) and labels events `gemini_adk` for the shared provenance contract;
+replace the provider seam with Vertex credentials later:
 
 ```text
 AGENT_MODE=live

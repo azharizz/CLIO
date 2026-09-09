@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Sequence
 from uuid import UUID, uuid4
 
+from filmgraph.graph_queries import recursive_impact_query, recursive_lineage_query
 from filmgraph.models import (
     AgentEvent,
     AgentEventKind,
@@ -211,7 +212,7 @@ class McpFirstFilmGraphService:
         """Read the connected impact neighborhood through the graph port."""
         response = self._read(
             "node_impact",
-            "SELECT * FROM graph_nodes WHERE id = %(node_id)s",
+            recursive_impact_query(),
             "filmgraph.get_node_impact",
             {"node_id": str(node_id)},
         )
@@ -226,7 +227,7 @@ class McpFirstFilmGraphService:
         """Read upstream lineage through the same MCP-first read seam."""
         response = self._read(
             "lineage",
-            "SELECT * FROM graph_nodes WHERE id = %(node_id)s",
+            recursive_lineage_query(),
             "filmgraph.get_lineage",
             {"node_id": str(node_id)},
         )

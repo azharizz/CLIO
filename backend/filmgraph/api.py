@@ -569,7 +569,11 @@ def create_agent_run(request: AgentRunCreateRequest) -> AgentRun:
             prompt = f"{marker} {prompt}"
     if request.focus_node:
         prompt = f"[FOCUS:{request.focus_node}] {prompt}"
-    run = _service().create_agent_run(request.workflow_id, prompt, request.stage_name, request.model_name, request.runtime_mode)
+    settings = get_settings()
+    model_name = request.model_name
+    if request.runtime_mode == "live" and model_name == "gemini-simulated" and settings.agent_provider_model:
+        model_name = settings.agent_provider_model
+    run = _service().create_agent_run(request.workflow_id, prompt, request.stage_name, model_name, request.runtime_mode)
     _service().append_agent_event(
         run.id,
         AgentEventKind.started,
@@ -601,11 +605,14 @@ async def stream_agent_run(run_id: UUID) -> StreamingResponse:
     if run is None:
         raise HTTPException(status_code=404, detail="agent run not found")
 
+    settings = get_settings()
     provider = provider_for(
         run.runtime_mode,
-        api_key=os.getenv("GEMINI_API_KEY"),
-        project=os.getenv("GOOGLE_CLOUD_PROJECT"),
-        location=os.getenv("GOOGLE_CLOUD_LOCATION"),
+        api_key=settings.agent_provider_api_key or os.getenv("GEMINI_API_KEY"),
+        provider_url=settings.agent_provider_url,
+        model_name=run.model_name or settings.agent_provider_model,
+        project=settings.google_cloud_project or os.getenv("GOOGLE_CLOUD_PROJECT"),
+        location=settings.google_cloud_location or os.getenv("GOOGLE_CLOUD_LOCATION"),
     )
 
     async def event_source():

@@ -1,9 +1,12 @@
 services:
   clickhouse:
     image: clickhouse/clickhouse-server:24.8
+    environment:
+      CLICKHOUSE_USER: clio
+      CLICKHOUSE_PASSWORD: clio-local
+      CLICKHOUSE_DB: filmgraph
     ports:
       - "8123:8123"
       - "9000:9000"
     volumes:
       - ./clickhouse/init:/docker-entrypoint-initdb.d
-

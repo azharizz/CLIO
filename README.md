@@ -14,7 +14,7 @@ The synthetic demo is always marked `LOCAL DEMO`: revision **V5** changes
 
 - Node 22 and pnpm
 - Python 3.13
-- Docker Desktop/Engine for ClickHouse mode (optional; memory fallback works)
+- Docker Desktop/Engine for the local ClickHouse store
 
 ## Start locally
 
@@ -45,13 +45,16 @@ Open [http://127.0.0.1:3000](http://127.0.0.1:3000). The Python API uses
 
 ```text
 GRAPH_QUERY_MODE=auto
-AGENT_MODE=simulated
+AGENT_MODE=live
+AGENT_PROVIDER_URL=https://openrouter.ai/api/v1/chat/completions
+AGENT_PROVIDER_MODEL=deepseek/deepseek-v4-flash-0731
+AGENT_PROVIDER_API_KEY=your-openrouter-key
 CLIO_MCP_ENDPOINT=
 CLIO_MCP_COMMAND=
 CLIO_GITHUB_TOKEN=
 CLIO_CLICKHOUSE_HOST=127.0.0.1
 CLIO_CLICKHOUSE_PORT=8123
-CLIO_USE_MEMORY_STORE=true
+CLIO_USE_MEMORY_STORE=false
 ```
 
 In `auto` mode, reads try a configured ClickHouse MCP tool first, then
@@ -60,6 +63,13 @@ source (`CLICKHOUSE MCP`, `DIRECT CLICKHOUSE`, or `LOCAL FALLBACK`). MCP is
 read-only; mutations append events in the Python repository. `CLIO_*` is the
 current configuration prefix; the older `FILMGRAPH_*` names remain accepted as
 backward-compatible aliases.
+
+With `AGENT_MODE=live`, CLIO uses the configured OpenRouter model as a real
+tool-using agent: it reads impact, lineage, timing, and revision tools before
+returning a recommendation. The provider emits the same ADK-shaped event
+stream as the simulator and never writes without an explicit human action.
+Set `AGENT_MODE=simulated` to run offline; Vertex Gemini/ADK credentials can be
+added later without changing the browser contract.
 
 ## Script Git
 

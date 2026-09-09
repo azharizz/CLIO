@@ -8,6 +8,7 @@ from uuid import UUID
 
 from filmgraph.models import (
     AgentEvent,
+    AgentEventKind,
     AgentRun,
     ApprovalStatus,
     DeliveryRecord,
@@ -22,6 +23,7 @@ from filmgraph.models import (
     WorkflowEvent,
     WorkflowStatus,
 )
+from filmgraph.graph_queries import recursive_impact_query, recursive_lineage_query
 
 
 class ClickHouseFilmGraphRepository:
@@ -326,7 +328,20 @@ class ClickHouseFilmGraphRepository:
         )
 
     def get_node_impact(self, node_id: UUID) -> List[GraphNode]:
-        """Return the connected neighborhood using the persisted edge list."""
+        """Return the connected neighborhood with a cycle-safe CTE.
+
+        Older ClickHouse builds, or a mocked client that does not implement
+        recursive CTEs, still get the original Python traversal as a local
+        compatibility fallback.
+        """
+        try:
+            rows = self._query_rows(recursive_impact_query(), {"node_id": str(node_id)})
+            return [GraphNode(**row) for row in rows]
+        except Exception:
+            return self._python_node_impact(node_id)
+
+    def _python_node_impact(self, node_id: UUID) -> List[GraphNode]:
+        """Compatibility traversal used only when recursive SQL is unavailable."""
         nodes = {node.id: node for node in self.list_graph_nodes()}
         edges = self.list_graph_edges()
         adjacency: Dict[UUID, List[UUID]] = {}
@@ -341,10 +356,18 @@ class ClickHouseFilmGraphRepository:
                 continue
             seen.add(current)
             queue.extend(adjacency.get(current, []))
-        return [nodes[item] for item in seen if item in nodes]
+        return sorted((nodes[item] for item in seen if item in nodes), key=lambda node: (node.sequence, str(node.id)))
 
     def get_lineage(self, node_id: UUID) -> List[GraphNode]:
-        """Return the node and all upstream parents in deterministic order."""
+        """Return the node and all upstream parents with a recursive CTE."""
+        try:
+            rows = self._query_rows(recursive_lineage_query(), {"node_id": str(node_id)})
+            return [GraphNode(**row) for row in rows]
+        except Exception:
+            return self._python_lineage(node_id)
+
+    def _python_lineage(self, node_id: UUID) -> List[GraphNode]:
+        """Compatibility traversal used only when recursive SQL is unavailable."""
         nodes = {node.id: node for node in self.list_graph_nodes()}
         parents: Dict[UUID, List[UUID]] = {}
         for edge in self.list_graph_edges():
@@ -357,7 +380,7 @@ class ClickHouseFilmGraphRepository:
                 continue
             seen.add(current)
             queue.extend(parents.get(current, []))
-        return [nodes[item] for item in seen if item in nodes]
+        return sorted((nodes[item] for item in seen if item in nodes), key=lambda node: (node.sequence, str(node.id)))
 
     def get_workspace_snapshot(self, film_id: str, revision_id: str) -> Dict[str, Any]:
         return {
