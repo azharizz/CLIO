@@ -40,9 +40,10 @@ beats, and one V5 collision revision centered on SC 17.
 
 ## Watch the workflow
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/azharizz/CLIO/main/docs/assets/clio-workflow.gif" alt="CLIO workflow: onboarding, screenplay map, impact inspection, agent proposal, and Script Git comparison" width="100%">
-</p>
+| Script impact walkthrough | Evidence-to-decision loop |
+| --- | --- |
+| ![CLIO screenplay workflow: onboarding, map, impact inspection, agent proposal, and Script Git comparison](https://raw.githubusercontent.com/azharizz/CLIO/main/docs/assets/clio-workflow.gif) | ![CLIO evidence review: impact inspector, agent proposal, runtime decision, and editor approval](https://raw.githubusercontent.com/azharizz/CLIO/main/docs/assets/clio-evidence-review.gif) |
+| Follow one revision through the screenplay map. | See the evidence pass end at an editor decision. |
 
 | Script map | Evidence review |
 | --- | --- |

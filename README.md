@@ -20,7 +20,7 @@
   <p>
     <a href="https://clio-agentic.web.app/">Live app</a> ·
     <a href="docs/submission-description.md">Submission description</a> ·
-    <a href="docs/assets/clio-workflow.gif">Workflow GIF</a> ·
+    <a href="docs/assets/clio-workflow.gif">Workflow GIFs</a> ·
     <a href="docs/workflow.md">Technical workflow</a>
   </p>
 </div>
@@ -63,12 +63,13 @@ screenplay change.
 
 ## See it in action
 
-<p align="center">
-  <img src="docs/assets/clio-workflow.gif" alt="CLIO workflow: onboarding, screenplay map, impact inspection, agent proposal, and Script Git comparison" width="100%">
-</p>
+| Script impact walkthrough | Evidence-to-decision loop |
+| --- | --- |
+| ![CLIO screenplay workflow: onboarding, map, impact inspection, agent proposal, and Script Git comparison](docs/assets/clio-workflow.gif) | ![CLIO evidence review: impact inspector, agent proposal, runtime decision, and editor approval](docs/assets/clio-evidence-review.gif) |
+| Follow one revision through the screenplay map. | See the evidence pass end at an editor decision. |
 
-This walkthrough follows a fictional 25-scene film map from one revision to a
-reviewed decision.
+Together, these two loops follow a fictional 25-scene film map from a revision
+to a reviewed decision.
 
 | Moment | What the editor sees |
 | --- | --- |
