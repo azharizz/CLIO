@@ -9,11 +9,13 @@ export const Route = createFileRoute('/api/agent-runs/$runId/events')({
     handlers: {
       GET: async ({ params, request }) => {
         // The browser remains same-origin; only this server route knows the
-        // optional FastAPI transport.  A short timeout keeps the local demo
-        // usable when the Python service is intentionally stopped.
+        // optional FastAPI transport. Cloud-backed agent runs can take a few
+        // seconds to establish because the repository reads ClickHouse before
+        // the provider starts. Keep the connect budget bounded, but do not
+        // turn a healthy live stream into a local simulation prematurely.
         if (!params.runId.startsWith('sim-')) {
           const controller = new AbortController()
-          const timeout = setTimeout(() => controller.abort(), 1800)
+          const timeout = setTimeout(() => controller.abort(), 15000)
           try {
             const response = await fetch(`${backendBaseUrl()}/api/v1/agent-runs/${encodeURIComponent(params.runId)}/stream`, {
               headers: { Accept: 'text/event-stream' },

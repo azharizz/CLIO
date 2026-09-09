@@ -10,6 +10,7 @@ export const Route = createFileRoute('/api/agent-runs')({
         if (!normalized.workflow_id && typeof normalized.workflowId === 'string') normalized.workflow_id = normalized.workflowId
         if (!normalized.stage_name && typeof normalized.stage === 'string') normalized.stage_name = normalized.stage
         if (!normalized.focus_node && typeof normalized.focusNode === 'string') normalized.focus_node = normalized.focusNode
+        if (!normalized.memory_user_id && typeof normalized.memoryUserId === 'string') normalized.memory_user_id = normalized.memoryUserId
         const hasUuidWorkflow = typeof normalized.workflow_id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalized.workflow_id)
         if (!hasUuidWorkflow) {
           delete normalized.workflow_id

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev --host 127.0.0.1 --port 3000",
-    "build": "vite build",
+    "build": "vite build && node scripts/ensure-firebase-index.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 3000",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",

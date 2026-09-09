@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "clio-continuity-20260909"
+  },
+  "targets": {
+    "clio-continuity-20260909": {
+      "hosting": {
+        "clio-agentic": ["clio-agentic"]
+      }
+    }
+  }
+}

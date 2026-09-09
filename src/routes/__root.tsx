@@ -14,7 +14,10 @@ export const Route = createRootRoute({
       },
       { title: 'CLIO — Continuity & Lineage Intelligence Operator' },
     ],
-    links: [{ rel: 'icon', href: '/clio-cut-monogram.png', type: 'image/png' }],
+    links: [
+      { rel: 'icon', href: '/clio-cut-monogram.png', type: 'image/png' },
+      { rel: 'stylesheet', href: '/clio.css' },
+    ],
   }),
   notFoundComponent: RootNotFound,
   component: RootDocument,

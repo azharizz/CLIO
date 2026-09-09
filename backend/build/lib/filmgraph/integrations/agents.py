@@ -323,25 +323,11 @@ class GeminiAdkAgentProvider:
         # Keep the graph context explicit and bounded: the managed ADK agent
         # reasons over the same current snapshot that Cloud Run read from
         # ClickHouse, while its own tool calls remain read-only.
-        raw_nodes = [item for item in context.get("graph_nodes", []) if isinstance(item, dict)]
-        # Tool calls own detailed screenplay evidence.  The model only needs a
-        # small index to select the relevant IDs; this avoids treating a whole
-        # screenplay dump as reasoning context on every run.
         graph = {
             "focus_node": context.get("focus_node") or _focus_from_prompt(str(context.get("prompt") or "")),
             "prompt": context.get("prompt"),
-            "node_index": [
-                {
-                    "id": node.get("id"),
-                    "kind": node.get("kind"),
-                    "scene_number": node.get("scene_number"),
-                    "beat_number": node.get("beat_number"),
-                    "heading": node.get("heading") or node.get("label"),
-                    "start_seconds": node.get("start_seconds"),
-                    "end_seconds": node.get("end_seconds"),
-                }
-                for node in raw_nodes[:160]
-            ],
+            "nodes": context.get("graph_nodes", [])[:160],
+            "edges": context.get("graph_edges", [])[:320],
         }
         message = (
             "You are operating inside CLIO. Analyze this screenplay graph request. "
@@ -360,29 +346,6 @@ class GeminiAdkAgentProvider:
             for resource in self.resources:
                 try:
                     agent = client.agent_engines.get(name=resource)
-                    memory_user_id = str(context.get("memory_user_id") or "anonymous")
-                    memory_items: list[Any] = []
-                    memory_error: str | None = None
-                    # Memory Bank is deliberately queried explicitly rather
-                    # than assumed to be implicit in an Agent Runtime session.
-                    # Only a compact result is added to the model context;
-                    # ClickHouse remains the screenplay source of truth.
-                    try:
-                        memory_response = await agent.async_search_memory(
-                            user_id=memory_user_id,
-                            query="approved editorial continuity decisions and review preferences relevant to this screenplay request",
-                        )
-                        raw_memory = memory_response if isinstance(memory_response, dict) else getattr(memory_response, "model_dump", lambda: {})()
-                        if isinstance(raw_memory, dict) and isinstance(raw_memory.get("memories"), list):
-                            memory_items = raw_memory["memories"][:4]
-                    except Exception as exc:
-                        memory_error = str(exc)[:300]
-                    memory_context = {
-                        "retrieved": len(memory_items),
-                        "items": memory_items,
-                        "note": "Memory is advisory; use current ClickHouse graph evidence as truth.",
-                    }
-                    run_message = message + "\nMEMORY_BANK_CONTEXT:\n" + json.dumps(memory_context, ensure_ascii=False, default=str)
                     provenance = Provenance(
                         source="gemini_adk",
                         transport="agent_runtime",
@@ -399,17 +362,16 @@ class GeminiAdkAgentProvider:
                             "notes": "Gemini ADK Agent Runtime is reading the graph with read-only evidence tools.",
                             "memory": {
                                 "scope": "user_id",
-                                "status": "retrieved" if memory_error is None else "unavailable",
-                                "retrieved_count": len(memory_items),
-                                "error": memory_error,
+                                "status": "managed_memory_bank_attached",
+                                "retrieval": "runtime-managed; no memory content is inferred without a runtime trace",
                             },
                         },
                         provenance=provenance,
                         occurred_at=utcnow(),
                     )
                     async for raw in agent.async_stream_query(
-                        user_id=memory_user_id,
-                        message=run_message,
+                        user_id=str(context.get("memory_user_id") or "anonymous"),
+                        message=message,
                     ):
                         item = raw if isinstance(raw, dict) else getattr(raw, "model_dump", lambda: {"event": str(raw)})()
                         content = item.get("content") if isinstance(item, dict) else None

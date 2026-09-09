@@ -50,7 +50,11 @@ export class BackendUnavailableError extends Error {
 
 export function backendBaseUrl(): string {
   const env = typeof process !== 'undefined' ? (process.env.CLIO_API_URL ?? process.env.FILMGRAPH_API_URL) : undefined
-  return (env || 'http://127.0.0.1:8000').replace(/\/$/, '')
+  if (env) return env.replace(/\/$/, '')
+  // A Firebase-hosted static client must use the same-origin Cloud Run
+  // rewrite. Local development retains the direct FastAPI default.
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('.web.app')) return ''
+  return 'http://127.0.0.1:8000'
 }
 
 // ClickHouse Cloud has real network/analytics latency; the previous 1.4s
@@ -257,7 +261,7 @@ export function normalizeScriptGitDocument(value: Record<string, unknown>): Scri
 }
 
 export async function loadScriptGit(source: string, ref?: string, path?: string): Promise<ScriptGitDocument> {
-  const response = await fetch('/api/script-git/load', {
+  const response = await fetch(typeof window !== 'undefined' && window.location.hostname.endsWith('.web.app') ? '/api/v1/script-git/load' : '/api/script-git/load', {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify({ source, ...(ref ? { ref } : {}), ...(path ? { path } : {}), history_limit: 12 }),

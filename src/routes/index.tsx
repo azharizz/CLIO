@@ -38,6 +38,7 @@ import {
   lineageFor,
   updateLocalGraphNode,
 } from '../lib/workspace'
+import { fetchWorkspaceSnapshot } from '../lib/api'
 import {
   formatWorkspaceCacheAge,
   invalidateWorkspaceCache,
@@ -52,6 +53,7 @@ type FlowEdge = Edge<Record<string, unknown>>
 type AgentAction = 'inspect' | 'edit' | 'remove' | 'add'
 type WorkspaceSyncState = 'loading' | 'refreshing' | 'ready' | 'offline'
 const ONBOARDING_STORAGE_KEY = 'clio-onboarding-complete'
+const MEMORY_USER_STORAGE_KEY = 'clio-memory-user-id'
 const AGENT_RELATED_HIGHLIGHT_MS = 10_000
 
 const AGENT_ACTIONS: Array<{ id: AgentAction; label: string; short: string }> = [
@@ -60,6 +62,59 @@ const AGENT_ACTIONS: Array<{ id: AgentAction; label: string; short: string }> = 
   { id: 'remove', label: 'REMOVE', short: 'TIME' },
   { id: 'add', label: 'ADD', short: 'LINK' },
 ]
+
+// Firebase hosts a static client while FastAPI exposes the versioned API.
+// Local TanStack Start keeps the short same-origin handlers. On Firebase the
+// browser talks to FastAPI directly, so it must use FastAPI's real SSE route
+// rather than the TanStack proxy route.
+function isFirebaseHosted(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname.endsWith('.web.app')
+}
+
+function apiPath(path: string): string {
+  if (!isFirebaseHosted()) return path
+  if (/^\/api\/agent-runs\/[^/?]+\/events(?:\?|$)/.test(path)) {
+    return path.replace(/^\/api\/agent-runs\/([^/?]+)\/events/, '/api/v1/agent-runs/$1/stream')
+  }
+  if (path.startsWith('/api/')) return path.replace(/^\/api/, '/api/v1')
+  return path
+}
+
+/**
+ * Authentication will replace this with the signed CLIO user/workspace claim.
+ * Until then it gives one browser a stable, opaque Memory Bank scope without
+ * putting any screenplay content in local storage or in the identifier.
+ */
+function memoryUserId(): string {
+  if (typeof window === 'undefined') return 'anonymous'
+  const existing = window.localStorage.getItem(MEMORY_USER_STORAGE_KEY)
+  if (existing && /^[A-Za-z0-9_.-]{8,128}$/.test(existing)) return existing
+  const generated = `browser-${window.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`
+  window.localStorage.setItem(MEMORY_USER_STORAGE_KEY, generated)
+  return generated
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/**
+ * Seeded graph frames deliberately use readable visual IDs (for example
+ * `scene-17`). FastAPI protects its write routes with UUID path parameters.
+ * Resolve a readable frame to its persisted row only for the Firebase static
+ * client; local TanStack handlers retain their existing behavior.
+ */
+async function resolveHostedNodeId(node: WorkspaceNode): Promise<string> {
+  if (!isFirebaseHosted() || UUID_PATTERN.test(node.id)) return node.id
+  const response = await fetch(apiPath('/api/graph/nodes'), { headers: { Accept: 'application/json' } })
+  if (!response.ok) throw new Error(`Unable to resolve script node (${response.status})`)
+  const rows = await response.json() as Array<Record<string, unknown>>
+  const match = rows.find((row) => {
+    if (row.kind !== node.data.kind) return false
+    if (String(row.scene_number ?? '') !== String(node.data.sceneNumber ?? '')) return false
+    return node.data.kind !== 'beat' || Number(row.beat_number) === Number(node.data.beatNumber)
+  })
+  if (!match || typeof match.id !== 'string') throw new Error('The selected script node no longer exists in ClickHouse.')
+  return match.id
+}
 
 export const Route = createFileRoute('/')({
   component: RootLanding,
@@ -479,18 +534,10 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
   }, [])
 
   const freshWorkspace = useCallback(async (): Promise<WorkspaceSnapshot> => {
-    const response = await fetch('/api/workspace?filmId=demo-feature&revisionId=rev-05', {
-      // Every explicit refresh bypasses the server/browser cache. The
-      // previous snapshot is already being shown by the SWR layer.
-      cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-        'Cache-Control': 'no-cache',
-        'X-CLIO-Refresh': '1',
-      },
-    })
-    if (!response.ok) throw new Error(`Workspace refresh failed (${response.status})`)
-    const refreshed = (await response.json()) as WorkspaceSnapshot
+    // Normalize the versioned FastAPI payload in both local and Firebase
+    // builds. TanStack's server handler performs this normalization locally;
+    // hosted static builds call the same backend through the rewrite.
+    const refreshed = await fetchWorkspaceSnapshot('demo-feature', 'rev-05')
     writeWorkspaceCache(refreshed)
     return refreshed
   }, [])
@@ -628,23 +675,45 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
     let responseReceived = false
     let mutationSucceeded = false
     try {
-      const path = editorMode === 'create' ? '/api/graph/nodes' : `/api/graph/nodes/${encodeURIComponent(editorNodeId ?? '')}`
+      const visualTarget = editorNodeId ? snapshot.graph.nodes.find((node) => node.id === editorNodeId) : undefined
+      const persistedTargetId = editorMode === 'edit' && visualTarget
+        ? await resolveHostedNodeId(visualTarget)
+        : editorNodeId
+      const path = apiPath(editorMode === 'create' ? '/api/graph/nodes' : `/api/graph/nodes/${encodeURIComponent(persistedTargetId ?? '')}`)
+      // The static Firebase build reaches FastAPI directly. Keep the camelCase
+      // contract for local TanStack handlers, but serialize the native
+      // FastAPI boundary when no server handler is present.
+      const nodePayload = isFirebaseHosted()
+        ? {
+            kind: draft.kind,
+            scene_number: draft.sceneNumber,
+            beat_number: draft.beatNumber,
+            parent_scene_id: draft.parentSceneId,
+            heading: draft.heading,
+            script_text: draft.scriptText,
+            narration_text: draft.narrationText || null,
+            start_seconds: draft.startSeconds,
+            end_seconds: draft.endSeconds,
+            actor: 'EDITORIAL',
+            runtime_mode: snapshot.runtimeMode ?? 'simulation',
+          }
+        : {
+            kind: draft.kind,
+            sceneNumber: draft.sceneNumber,
+            beatNumber: draft.beatNumber,
+            parentSceneId: draft.parentSceneId,
+            heading: draft.heading,
+            scriptText: draft.scriptText,
+            narrationText: draft.narrationText,
+            startSeconds: draft.startSeconds,
+            endSeconds: draft.endSeconds,
+            actor: 'EDITORIAL',
+            runtime_mode: 'simulation',
+          }
       const response = await fetch(path, {
         method: editorMode === 'create' ? 'POST' : 'PATCH',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          kind: draft.kind,
-          sceneNumber: draft.sceneNumber,
-          beatNumber: draft.beatNumber,
-          parentSceneId: draft.parentSceneId,
-          heading: draft.heading,
-          scriptText: draft.scriptText,
-          narrationText: draft.narrationText,
-          startSeconds: draft.startSeconds,
-          endSeconds: draft.endSeconds,
-          actor: 'EDITORIAL',
-          runtime_mode: 'simulation',
-        }),
+        body: JSON.stringify(nodePayload),
       })
       responseReceived = true
       const payload = await response.json().catch(() => ({})) as Record<string, unknown>
@@ -716,7 +785,11 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
     setCrudError('')
     let responseReceived = false
     try {
-      const response = await fetch(`/api/graph/nodes/${encodeURIComponent(target.id)}?actor=EDITORIAL&runtimeMode=simulation`, { method: 'DELETE', headers: { Accept: 'application/json' } })
+      const persistedTargetId = await resolveHostedNodeId(target)
+      const deleteQuery = isFirebaseHosted()
+        ? `actor=EDITORIAL&runtime_mode=${encodeURIComponent(snapshot.runtimeMode ?? 'simulation')}`
+        : 'actor=EDITORIAL&runtimeMode=simulation'
+      const response = await fetch(apiPath(`/api/graph/nodes/${encodeURIComponent(persistedTargetId)}?${deleteQuery}`), { method: 'DELETE', headers: { Accept: 'application/json' } })
       responseReceived = true
       const payload = await response.json().catch(() => ({})) as Record<string, unknown>
       if (!response.ok) {
@@ -820,17 +893,30 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
     let runId = ''
     const runtimeMode = snapshot.runtimeMode === 'live' ? 'live' : 'simulation'
     try {
-      const response = await fetch('/api/agent-runs', {
+      const prompt = `[${agentAction.toUpperCase()} NODE] ${agentPrompt.trim() || agentPromptFor(agentAction, selectedNode)}`
+      const agentPayload = isFirebaseHosted()
+        ? {
+            workflow_id: snapshot.workspaceId,
+            prompt,
+            stage_name: 'Script',
+            action: agentAction,
+            focus_node: selectedNode?.id,
+            runtime_mode: runtimeMode,
+            memory_user_id: memoryUserId(),
+          }
+        : {
+            workflowId: snapshot.workspaceId,
+            prompt,
+            stage: 'Script',
+            action: agentAction,
+            focusNode: selectedNode?.id,
+            runtime_mode: runtimeMode,
+            memory_user_id: memoryUserId(),
+          }
+      const response = await fetch(apiPath('/api/agent-runs'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workflowId: snapshot.workspaceId,
-          prompt: `[${agentAction.toUpperCase()} NODE] ${agentPrompt.trim() || agentPromptFor(agentAction, selectedNode)}`,
-          stage: 'Script',
-          action: agentAction,
-          focusNode: selectedNode?.id,
-          runtime_mode: runtimeMode,
-        }),
+        body: JSON.stringify(agentPayload),
       })
       if (response.ok) {
         runId = ((await response.json()) as { id?: string }).id ?? ''
@@ -845,7 +931,7 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
       return
     }
     const streamQuery = new URLSearchParams({ action: agentAction, focus: selectedNode?.id ?? '' })
-    const stream = new EventSource(`/api/agent-runs/${encodeURIComponent(runId)}/events?${streamQuery.toString()}`)
+    const stream = new EventSource(apiPath(`/api/agent-runs/${encodeURIComponent(runId)}/events?${streamQuery.toString()}`))
     streamRef.current = stream
     const handleEvent = (event: Event) => {
       try {
@@ -869,20 +955,26 @@ export function ClioWorkspace({ loaderData }: { loaderData: WorkspaceSnapshot })
       fallbackTimerRef.current = null
     }
     stream.addEventListener('agent.done', finish)
+    // FastAPI's direct SSE endpoint terminates with workflow.done; the local
+    // TanStack proxy terminates with agent.done. Supporting both keeps the
+    // UI responsive in local development and on Firebase Hosting.
+    stream.addEventListener('workflow.done', finish)
     stream.onerror = () => {
-      runLocalFallback()
+      // A live run must never be replaced with a local answer. The backend
+      // emits an explicit `agent.failed` event for provider errors; keeping
+      // that event visible preserves the real provenance and run status.
+      if (runtimeMode !== 'live') runLocalFallback()
       finish()
     }
-    fallbackTimerRef.current = setTimeout(() => {
-      const fallbackEvents = createAgentEventStream(snapshot, { action: agentAction, prompt: agentPrompt, ...(selectedNode?.id ? { focusNode: selectedNode.id } : {}) })
-        .map(toStreamEvent)
-      highlightAgentEvidence(...fallbackEvents.map((event) => event.detail))
-      setFeed((current) => {
-        if (current.some((event) => event.stage === 'critic')) return current
-        return fallbackEvents.reduce((items, event) => addEvent(items, event), current)
-      })
-      finish()
-    }, runtimeMode === 'live' ? 50000 : 3500)
+    // Only simulation needs a client-side offline answer. Live mode waits for
+    // the provider's streamed completion/failure event, regardless of Cloud
+    // graph latency or the model's tool loop duration.
+    if (runtimeMode !== 'live') {
+      fallbackTimerRef.current = setTimeout(() => {
+        runLocalFallback()
+        finish()
+      }, 3500)
+    }
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {

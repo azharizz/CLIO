@@ -126,8 +126,8 @@ def _agent_node_payload(node: GraphNode) -> Dict[str, Any]:
         "start_seconds": node.start_seconds,
         "end_seconds": node.end_seconds,
         "duration_seconds": node.duration_seconds,
-        "narration_text": (node.narration_text or "")[:350],
-        "script_text": (node.script_text or "")[:500],
+        "narration_text": (node.narration_text or "")[:900],
+        "script_text": (node.script_text or "")[:1400],
     }
 
 
@@ -569,7 +569,7 @@ def agent_tool_node_impact(node_reference: str):
     impact_nodes = service.get_node_impact(node.id)
     return {
         "focus_node": _agent_node_payload(node),
-        "impact_nodes": [_agent_node_payload(item) for item in impact_nodes[:16]],
+        "impact_nodes": [_agent_node_payload(item) for item in impact_nodes[:32]],
         "query_provenance": {
             "source": service.last_source,
             "fallback": service.last_source == "direct_clickhouse",

@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS agent_runs
     stage_name Nullable(String),
     model_name String,
     runtime_mode LowCardinality(String),
+    memory_user_id String DEFAULT 'anonymous',
     status LowCardinality(String),
     prompt String,
     summary Nullable(String),

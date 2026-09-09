@@ -97,6 +97,49 @@ def test_node_impact_and_agent_stream_use_scene_context():
     assert [item["kind"] for item in persisted] == ["started", "progress", "tool_call", "message", "tool_result", "completed"]
 
 
+def test_agent_read_tools_are_resolved_from_the_live_graph_and_stay_read_only():
+    reset_singletons()
+    client = TestClient(create_app())
+
+    impact = client.get("/api/v1/agent-tools/nodes/scene-17/impact")
+    assert impact.status_code == 200
+    payload = impact.json()
+    assert payload["focus_node"]["scene_number"] == "17"
+    assert payload["query_provenance"]["source"] in {"computed", "direct_clickhouse", "clickhouse_mcp"}
+
+    lineage = client.get("/api/v1/agent-tools/nodes/17/lineage")
+    assert lineage.status_code == 200
+    assert any(item["kind"] == "script" for item in lineage.json()["lineage"])
+
+    timing = client.get("/api/v1/agent-tools/nodes/scene-17/timing")
+    assert timing.status_code == 200
+    assert timing.json()["focus_node"]["duration_seconds"] == 510
+    assert timing.json()["film_duration_seconds"] == 11700
+
+    search = client.get("/api/v1/agent-tools/script/search", params={"query": "iceberg"})
+    assert search.status_code == 200
+    assert search.json()["match_count"] >= 1
+
+
+def test_agent_run_keeps_a_bounded_memory_scope_for_agent_runtime():
+    reset_singletons()
+    client = TestClient(create_app())
+    workflow_id = client.get("/api/v1/workspace").json()["workflows"][0]["id"]
+    response = client.post(
+        "/api/v1/agent-runs",
+        json={
+            "workflow_id": workflow_id,
+            "prompt": "Explain the scene.",
+            "runtime_mode": "simulation",
+            "memory_user_id": "browser-editor-123",
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["memory_user_id"] == "browser-editor-123"
+    started = client.get(f"/api/v1/agent-runs/{response.json()['id']}/events").json()[0]
+    assert started["payload"]["memory"]["scope"] == "user_id"
+
+
 def test_invalid_workflow_transition_stays_a_409():
     reset_singletons()
     client = TestClient(create_app())
