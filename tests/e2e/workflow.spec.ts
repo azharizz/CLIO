@@ -1,0 +1,112 @@
+import { test, expect } from '@playwright/test'
+
+// Each test starts from the same append-only local demo state. This keeps a
+// failed CRUD assertion from leaking a user-authored node into the next run.
+test.beforeEach(async ({ page }) => {
+  await page.request.post('/api/test/reset')
+})
+
+test('opens the complete timed script map', async ({ page }) => {
+  await page.goto('/')
+  await expect(page).toHaveTitle('CLIO — Continuity & Lineage Intelligence Operator')
+  await expect(page.getByTestId('workspace')).toBeVisible()
+  await expect(page.getByTestId('workspace')).toHaveAttribute('data-hydrated', 'true')
+  await expect(page.getByText('CLIO', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('CONTINUITY & LINEAGE INTELLIGENCE OPERATOR', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'CLIO onboarding' })).toBeVisible()
+  await expect(page.getByText('LOCAL DEMO', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('LOCAL SIMULATION', { exact: true }).first()).toBeVisible()
+  await expect(page.locator('[data-node-kind="scene"]')).toHaveCount(8)
+  await expect(page.getByText('16  BEATS', { exact: false }).first()).toBeVisible()
+  await expect(page.locator('[data-node-kind="revision"]')).toHaveCount(1)
+  await expect(page.getByText('13:00', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText(/MASTER OUTPUT|LANGUAGE SET|DELIVERY MATRIX/i)).toHaveCount(0)
+})
+
+test('selects a scene and runs explain/edit/remove/add questions', async ({ page }) => {
+  await page.goto('/workspace')
+  await expect(page.getByTestId('workspace')).toHaveAttribute('data-hydrated', 'true')
+
+  await page.getByRole('button', { name: 'SCENES', exact: true }).click()
+  await page.getByRole('button', { name: /SC 47/ }).click()
+  await expect(page.getByRole('complementary', { name: 'Context inspector' })).toBeVisible()
+  await expect(page.getByText('SCRIPT TEXT', { exact: true })).toBeVisible()
+  await expect(page.getByText('NARRATION', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'SHOW MAP', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'SHOW MAP', exact: true }).click()
+  await expect(page.locator('[data-node-kind="beat"]')).toHaveCount(4)
+  await page.getByRole('button', { name: 'HIDE MAP', exact: true }).click()
+  await expect(page.locator('[data-node-kind="beat"]')).toHaveCount(0)
+  const identity = page.getByRole('region', { name: 'Selected node identity' })
+  await expect(identity.getByText('07:36 → 09:48', { exact: true })).toBeVisible()
+  await expect(identity.getByText('02:12', { exact: true })).toBeVisible()
+
+  await page.getByRole('button', { name: /ASK AGENT/i }).click()
+  await expect(page.getByRole('dialog', { name: 'CLIO agent' })).toBeVisible()
+
+  const agent = page.getByRole('dialog', { name: 'CLIO agent' })
+  await agent.locator('.fg-agent-actions button').filter({ hasText: 'EDIT' }).click()
+  await agent.getByRole('button', { name: 'ANALYZE', exact: true }).click()
+  await expect(agent.locator('.fg-agent-output__item').filter({ hasText: 'AFFECTED:' })).toBeVisible({ timeout: 15000 })
+
+  await agent.locator('.fg-agent-actions button').filter({ hasText: 'REMOVE' }).click()
+  await agent.getByRole('button', { name: 'ANALYZE', exact: true }).click()
+  await expect(agent.locator('.fg-agent-output__item').filter({ hasText: 'UNNEEDED IF REMOVED:' })).toBeVisible({ timeout: 15000 })
+
+  await agent.locator('.fg-agent-actions button').filter({ hasText: 'ADD' }).click()
+  await agent.getByRole('button', { name: 'ANALYZE', exact: true }).click()
+  await expect(agent.locator('.fg-agent-output__item').filter({ hasText: 'POSSIBLE CONNECTIONS:' })).toBeVisible({ timeout: 15000 })
+})
+
+test('supports tracing, keyboard selection, reduced motion, and mobile width', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await expect(page.getByTestId('workspace')).toHaveAttribute('data-hydrated', 'true')
+  await expect(page.evaluate(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)).resolves.toBeTruthy()
+  await page.getByRole('button', { name: 'TRACE PATH', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'TRACE PATH', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByTestId('workspace').focus()
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('Space')
+  await expect(page.evaluate(() => document.documentElement.scrollWidth)).resolves.toBeLessThanOrEqual(390)
+})
+
+test('onboards an editor and supports scene CRUD in the workspace', async ({ page }) => {
+  await page.goto('/')
+  const onboarding = page.getByTestId('onboarding')
+  await expect(onboarding).toBeVisible()
+  await onboarding.getByRole('button', { name: 'NEXT', exact: true }).click()
+  await onboarding.getByRole('button', { name: 'NEXT', exact: true }).click()
+  await onboarding.getByRole('button', { name: 'ENTER MAP', exact: true }).click()
+  await expect(onboarding).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Create new scene', exact: true }).click()
+  const editor = page.getByTestId('node-editor')
+  await expect(editor).toBeVisible()
+  await editor.getByLabel('SCENE NO.', { exact: true }).fill('50')
+  await editor.getByLabel('HEADING', { exact: true }).fill('INT. TEST ROOM — NIGHT')
+  await editor.getByLabel('SCRIPT TEXT', { exact: true }).fill('A new scene enters the script map.')
+  await editor.getByLabel('NARRATION', { exact: true }).fill('NARRATOR: A new line joins the map.')
+  await editor.getByLabel('START (SEC)', { exact: true }).fill('780')
+  await editor.getByLabel('END (SEC)', { exact: true }).fill('840')
+  await editor.getByRole('button', { name: 'CREATE NODE', exact: true }).click()
+  await expect(page.locator('[data-node-kind="scene"]')).toHaveCount(9)
+  await expect(page.getByRole('complementary', { name: 'Context inspector' }).getByRole('heading', { name: 'INT. TEST ROOM — NIGHT', exact: true })).toBeVisible()
+
+  const inspector = page.getByRole('complementary', { name: 'Context inspector' })
+  await inspector.getByLabel('Node actions', { exact: true }).getByRole('button', { name: 'EDIT', exact: true }).click()
+  const edit = page.getByTestId('node-editor')
+  await edit.getByLabel('SCRIPT TEXT', { exact: true }).fill('The scene carries an edited action line.')
+  await edit.getByLabel('NARRATION', { exact: true }).fill('NARRATOR: The edit is recorded.')
+  await edit.getByLabel('END (SEC)', { exact: true }).fill('852')
+  await edit.getByRole('button', { name: 'SAVE CHANGES', exact: true }).click()
+  await expect(page.getByText('The scene carries an edited action line.', { exact: true })).toBeVisible()
+  await expect(page.getByText('NARRATOR: The edit is recorded.', { exact: true })).toBeVisible()
+
+  await inspector.getByLabel('Node actions', { exact: true }).getByRole('button', { name: 'DELETE', exact: true }).click()
+  const confirmation = page.getByRole('dialog', { name: 'Confirm node deletion' })
+  await expect(confirmation).toBeVisible()
+  await confirmation.getByRole('button', { name: 'DELETE', exact: true }).click()
+  await expect(page.locator('[data-node-kind="scene"]')).toHaveCount(8)
+  await expect(page.getByText('INT. TEST ROOM — NIGHT', { exact: true })).toHaveCount(0)
+})

@@ -141,3 +141,13 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# CLIO local development
+test-results/
+playwright-report/
+backend/.venv/
+backend/.pytest_cache/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.egg-info/

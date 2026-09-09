@@ -1,0 +1,3 @@
+/* View-level additions live here so the token sheet stays transport-neutral. */
+.fg-app [aria-hidden='true'] { user-select: none; }
+.fg-app ::selection { color: var(--black); background: var(--cyan); }
