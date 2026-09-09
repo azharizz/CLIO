@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 640" role="img" aria-labelledby="title description">
+  <title id="title">CLIO</title>
+  <desc id="description">CLIO, a screenplay dependency map. See what a script change breaks.</desc>
+
+  <rect width="1600" height="640" fill="#000000"/>
+  <rect x="36" y="36" width="1528" height="568" fill="none" stroke="#242424" stroke-width="2"/>
+  <path d="M36 108H1564" stroke="#242424" stroke-width="2"/>
+  <path d="M36 532H1564" stroke="#242424" stroke-width="2"/>
+
+  <g transform="translate(90 100) scale(.20)" fill="#ffffff" fill-rule="evenodd">
+    <path d="M760 0H250C112 0 0 112 0 250V1510C0 1648 112 1760 250 1760H760V1440H360C338 1440 320 1422 320 1400V360C320 338 338 320 360 320H760Z"/>
+    <path d="M0 0H320V1440H740V1760H0Z" transform="translate(900 0)"/>
+    <path d="M0 0H320V1760H0Z" transform="translate(1740 0)"/>
+    <path d="M200 0H520C630 0 720 90 720 200V1560C720 1670 630 1760 520 1760H200C90 1760 0 1670 0 1560V200C0 90 90 0 200 0ZM320 320C265 320 240 345 240 400V1360C240 1415 265 1440 320 1440H400C455 1440 480 1415 480 1360V400C480 345 455 320 400 320Z" transform="translate(2140 0)"/>
+  </g>
+
+  <path d="M96 498H656" stroke="#00e5ff" stroke-width="6"/>
+  <path d="M96 498H180" stroke="#ff2e93" stroke-width="6"/>
+  <text x="96" y="574" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" letter-spacing="-1">SEE WHAT A SCRIPT CHANGE BREAKS.</text>
+
+  <g fill="none" stroke-linejoin="miter">
+    <path d="M860 320H944V208H1030M944 320H1030M944 320V432H1030M1186 208H1262V270H1344M1186 320H1300V270H1344M1186 432H1262V382H1344M1500 270H1542M1500 382H1542" stroke="#00e5ff" stroke-width="3"/>
+    <path d="M860 320H944" stroke="#ff2e93" stroke-width="4"/>
+    <path d="M1500 326H1542" stroke="#ff2e93" stroke-width="4"/>
+  </g>
+
+  <g>
+    <g transform="translate(704 283)">
+      <rect width="156" height="74" fill="#0a0a0a" stroke="#ff2e93" stroke-width="3"/>
+      <path d="M14 0H0V14M142 0H156V14M0 60V74H14M156 60V74H142" fill="none" stroke="#ff2e93" stroke-width="3"/>
+      <path d="M22 25H88M22 41H118M22 57H66" stroke="#6d304d" stroke-width="3"/>
+      <rect x="124" y="22" width="12" height="12" fill="#ff2e93"/>
+    </g>
+
+    <g transform="translate(1030 171)">
+      <rect width="156" height="74" fill="#0a0a0a" stroke="#31383c" stroke-width="2"/>
+      <path d="M14 0H0V14M142 0H156V14M0 60V74H14M156 60V74H142" fill="none" stroke="#00e5ff" stroke-width="3"/>
+      <path d="M22 25H108M22 41H82M22 57H122" stroke="#475156" stroke-width="3"/>
+      <rect x="124" y="22" width="12" height="12" fill="#00e5ff"/>
+    </g>
+
+    <g transform="translate(1030 283)">
+      <rect width="156" height="74" fill="#0a0a0a" stroke="#00e5ff" stroke-width="3"/>
+      <path d="M14 0H0V14M142 0H156V14M0 60V74H14M156 60V74H142" fill="none" stroke="#00e5ff" stroke-width="3"/>
+      <path d="M22 25H118M22 41H64M22 57H104" stroke="#475156" stroke-width="3"/>
+      <rect x="124" y="22" width="12" height="12" fill="#00e5ff"/>
+    </g>
+
+    <g transform="translate(1030 395)">
+      <rect width="156" height="74" fill="#0a0a0a" stroke="#31383c" stroke-width="2"/>
+      <path d="M14 0H0V14M142 0H156V14M0 60V74H14M156 60V74H142" fill="none" stroke="#00e5ff" stroke-width="3"/>
+      <path d="M22 25H70M22 41H122M22 57H92" stroke="#475156" stroke-width="3"/>
+      <rect x="124" y="22" width="12" height="12" fill="#00e5ff"/>
+    </g>
+
+    <g transform="translate(1344 233)">
+      <rect width="156" height="74" fill="#0a0a0a" stroke="#31383c" stroke-width="2"/>
+      <path d="M14 0H0V14M142 0H156V14M0 60V74H14M156 60V74H142" fill="none" stroke="#00e5ff" stroke-width="3"/>
+      <path d="M22 25H118M22 41H82M22 57H108" stroke="#475156" stroke-width="3"/>
+      <rect x="124" y="22" width="12" height="12" fill="#00e5ff"/>
+    </g>
+
+    <g transform="translate(1344 345)">
+      <rect width="156" height="74" fill="#0a0a0a" stroke="#ffffff" stroke-width="3"/>
+      <path d="M14 0H0V14M142 0H156V14M0 60V74H14M156 60V74H142" fill="none" stroke="#ffffff" stroke-width="3"/>
+      <path d="M22 25H92M22 41H122M22 57H58" stroke="#6e767b" stroke-width="3"/>
+      <rect x="124" y="22" width="12" height="12" fill="#ffffff"/>
+    </g>
+  </g>
+
+  <circle cx="860" cy="320" r="9" fill="#ff2e93"/>
+  <circle cx="1030" cy="320" r="8" fill="#00e5ff"/>
+  <circle cx="1344" cy="270" r="8" fill="#00e5ff"/>
+  <circle cx="1344" cy="382" r="8" fill="#00e5ff"/>
+  <circle cx="1542" cy="382" r="9" fill="#ffffff"/>
+</svg>
