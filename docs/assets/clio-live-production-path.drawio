@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net" modified="2026-09-10T00:00:00.000Z" agent="Codex" version="26.0.14">
+  <diagram id="clio-live-production-path" name="CLIO live production path">
+    <mxGraphModel dx="1680" dy="1050" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1680" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="CLIO / LIVE PRODUCTION PATH" style="text;html=1;align=left;verticalAlign=middle;fontSize=24;fontStyle=1;fontColor=#172B4D;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="40" y="35" width="600" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Editor request → evidence service → human-approved screenplay change" style="text;html=1;align=left;verticalAlign=middle;fontSize=13;fontColor=#58708C;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="700" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend" value="Teal marching dashes: active flow, source → target&lt;br&gt;Blue marching dashes: read-only service call, source → target" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BFD0E1;fontColor=#45627F;fontSize=11;fontFamily=Helvetica;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="27" width="610" height="66" as="geometry"/>
+        </mxCell>
+        <mxCell id="editor-boundary" value="EDITOR WORKSPACE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBFDFF;strokeColor=#7A93AE;dashed=1;dashPattern=11 8;strokeWidth=1.5;fontColor=#1F3655;fontStyle=1;fontSize=14;fontFamily=Helvetica;align=left;verticalAlign=top;spacingTop=16;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="40" y="150" width="280" height="740" as="geometry"/>
+        </mxCell>
+        <mxCell id="gcp-boundary" value="GOOGLE CLOUD / US-CENTRAL1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBFDFF;strokeColor=#7A93AE;dashed=1;dashPattern=11 8;strokeWidth=1.5;fontColor=#1F3655;fontStyle=1;fontSize=14;fontFamily=Helvetica;align=left;verticalAlign=top;spacingTop=16;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="350" y="150" width="960" height="740" as="geometry"/>
+        </mxCell>
+        <mxCell id="external-boundary" value="DATA PROVIDER" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBFDFF;strokeColor=#7A93AE;dashed=1;dashPattern=11 8;strokeWidth=1.5;fontColor=#1F3655;fontStyle=1;fontSize=14;fontFamily=Helvetica;align=left;verticalAlign=top;spacingTop=16;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="150" width="300" height="740" as="geometry"/>
+        </mxCell>
+        <mxCell id="edge-zone" value="PUBLIC EDGE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BFD0E1;dashed=1;dashPattern=5 4;fontColor=#38516F;fontStyle=1;fontSize=12;fontFamily=Helvetica;align=left;verticalAlign=top;spacingTop=14;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="385" y="215" width="890" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="runtime-zone" value="CLIO RUNTIME" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BFD0E1;dashed=1;dashPattern=5 4;fontColor=#38516F;fontStyle=1;fontSize=12;fontFamily=Helvetica;align=left;verticalAlign=top;spacingTop=14;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="385" y="400" width="890" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="ops-zone" value="SECURITY &amp; OBSERVABILITY" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BFD0E1;dashed=1;dashPattern=5 4;fontColor=#38516F;fontStyle=1;fontSize=12;fontFamily=Helvetica;align=left;verticalAlign=top;spacingTop=14;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="385" y="700" width="890" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="workspace" value="&lt;b&gt;CLIO workspace&lt;/b&gt;&lt;br&gt;Revision · graph · trace&lt;br&gt;Evidence stays reviewable" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FBFC;strokeColor=#00A7B5;strokeWidth=1.5;fontColor=#1C3557;fontSize=13;fontFamily=Helvetica;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="78" y="384" width="204" height="115" as="geometry"/>
+        </mxCell>
+        <mxCell id="hosting" value="&lt;b&gt;Firebase Hosting&lt;/b&gt;&lt;br&gt;Public client · /api route" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FBFC;strokeColor=#00A7B5;strokeWidth=1.5;fontColor=#1C3557;fontSize=13;fontFamily=Helvetica;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="442" y="276" width="248" height="82" as="geometry"/>
+        </mxCell>
+        <mxCell id="cloud-run" value="&lt;b&gt;Cloud Run&lt;/b&gt;&lt;br&gt;API + approval gate&lt;br&gt;Explicit changes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FBFC;strokeColor=#00A7B5;strokeWidth=1.5;fontColor=#1C3557;fontSize=13;fontFamily=Helvetica;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="590" y="478" width="220" height="126" as="geometry"/>
+        </mxCell>
+        <mxCell id="agent-runtime" value="&lt;b&gt;Agent Runtime&lt;/b&gt;&lt;br&gt;Vertex AI service&lt;br&gt;No graph writes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B9CCE0;fontColor=#1C3557;fontSize=13;fontFamily=Helvetica;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="990" y="455" width="220" height="116" as="geometry"/>
+        </mxCell>
+        <mxCell id="memory-bank" value="&lt;b&gt;Memory Bank&lt;/b&gt;&lt;br&gt;Durable context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B9CCE0;fontColor=#1C3557;fontSize=12;fontFamily=Helvetica;spacing=9;" vertex="1" parent="1">
+          <mxGeometry x="900" y="598" width="165" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="cloud-tasks" value="&lt;b&gt;Cloud Tasks&lt;/b&gt;&lt;br&gt;Agent queue" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B9CCE0;fontColor=#1C3557;fontSize=11;fontFamily=Helvetica;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="1075" y="598" width="135" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="secrets" value="&lt;b&gt;Secret Manager&lt;/b&gt;&lt;br&gt;Runtime-only credentials" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B9CCE0;fontColor=#1C3557;fontSize=13;fontFamily=Helvetica;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="455" y="748" width="220" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="logging" value="&lt;b&gt;Cloud Logging&lt;/b&gt;&lt;br&gt;Request and agent traces" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B9CCE0;fontColor=#1C3557;fontSize=13;fontFamily=Helvetica;spacing=10;" vertex="1" parent="1">
+          <mxGeometry x="835" y="748" width="220" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="clickhouse" value="&lt;b&gt;ClickHouse Cloud&lt;/b&gt;&lt;br&gt;Screenplay graph&lt;br&gt;Primary data source" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B9CCE0;fontColor=#1C3557;fontSize=13;fontFamily=Helvetica;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="405" width="220" height="108" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-workspace-hosting" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00A7B5;strokeWidth=3;dashed=1;dashPattern=11 11;endArrow=block;" edge="1" parent="1" source="workspace" target="hosting">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-hosting-run" value="/api request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00A7B5;strokeWidth=3;dashed=1;dashPattern=11 11;endArrow=block;" edge="1" parent="1" source="hosting" target="cloud-run">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-run-agent" value="agent run" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00A7B5;strokeWidth=3;dashed=1;dashPattern=11 11;endArrow=block;" edge="1" parent="1" source="cloud-run" target="agent-runtime">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-agent-run" value="read-only tools" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3B82F6;strokeWidth=2;dashed=1;dashPattern=7 7;endArrow=block;" edge="1" parent="1" source="agent-runtime" target="cloud-run">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-run-clickhouse" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00A7B5;strokeWidth=3;dashed=1;dashPattern=11 11;endArrow=block;" edge="1" parent="1" source="cloud-run" target="clickhouse">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-secrets-run" value="server-only secrets" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3B82F6;strokeWidth=2;dashed=1;dashPattern=7 7;endArrow=block;" edge="1" parent="1" source="secrets" target="cloud-run">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-run-logging" value="structured logs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3B82F6;strokeWidth=2;dashed=1;dashPattern=7 7;endArrow=block;" edge="1" parent="1" source="cloud-run" target="logging">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-run-tasks" value="queue run" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3B82F6;strokeWidth=2;dashed=1;dashPattern=7 7;endArrow=block;" edge="1" parent="1" source="cloud-run" target="cloud-tasks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-tasks-agent" value="dispatch" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00A7B5;strokeWidth=3;dashed=1;dashPattern=11 11;endArrow=block;" edge="1" parent="1" source="cloud-tasks" target="agent-runtime">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="flow-agent-memory" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00A7B5;strokeWidth=3;dashed=1;dashPattern=11 11;endArrow=block;" edge="1" parent="1" source="agent-runtime" target="memory-bank">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

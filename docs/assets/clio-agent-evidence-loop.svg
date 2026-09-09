@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">How the CLIO evidence agent works</title>
+  <desc id="desc">A five-step loop: editor selection, read-only evidence collection, proposal synthesis, critic check, and human decision. A guardrail panel explains that the agent has no write capability and can make at most three evidence reads.</desc>
+  <defs>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#020617" flood-opacity=".26"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+      <path d="M0 0 L12 6 L0 12 Z" fill="#87a3c5"/>
+    </marker>
+    <style>
+      .title { font-family: Helvetica, Arial, sans-serif; font-size: 32px; font-weight: 700; fill: #f7fbff; letter-spacing: -.8px; }
+      .subtitle { font-family: Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 400; fill: #a9bdd7; }
+      .eyebrow { font-family: Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.1px; }
+      .card-title { font-family: Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 700; fill: #f7fbff; }
+      .body { font-family: Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 400; fill: #b9cae0; }
+      .small { font-family: Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 400; fill: #9aafca; }
+      .pill { font-family: Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 700; fill: #ddecff; }
+      .guard { font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; fill: #d3e1f2; }
+      .flow { fill: none; stroke: #87a3c5; stroke-width: 2.5; stroke-linecap: round; marker-end: url(#arrow); }
+      .card { fill: #14233d; stroke: #304969; stroke-width: 1.2; filter: url(#shadow); }
+      .node { fill: #0f1c32; stroke: #304969; stroke-width: 1.2; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#081426"/>
+  <circle cx="278" cy="95" r="220" fill="#0c2540" opacity=".55"/>
+  <circle cx="1110" cy="760" r="330" fill="#17113d" opacity=".36"/>
+  <path d="M0 140H1600" stroke="#213957" stroke-width="1"/>
+
+  <text x="64" y="70" class="title">CLIO / HOW THE EVIDENCE AGENT WORKS</text>
+  <text x="64" y="101" class="subtitle">It gathers proof around a screenplay change, then stops where editorial judgment begins.</text>
+
+  <g transform="translate(1044 38)">
+    <rect width="490" height="52" rx="26" fill="#102943" stroke="#2d5779"/>
+    <circle cx="28" cy="26" r="7" fill="#00d4c7"/>
+    <text x="48" y="30" class="pill">BOUNDED RUN</text>
+    <path d="M160 16V36M300 16V36" stroke="#386083"/>
+    <text x="180" y="30" class="pill">MAX 3 READS</text>
+    <text x="320" y="30" class="pill">NO WRITE CAPABILITY</text>
+  </g>
+
+  <path d="M360 340C405 300 425 297 465 297" class="flow"/>
+  <path d="M825 297C870 297 884 340 930 340" class="flow"/>
+  <path d="M1070 420C1070 456 1160 468 1160 515" class="flow"/>
+  <path d="M1010 595C945 620 918 690 855 690" class="flow"/>
+  <path d="M505 690C380 670 230 570 230 420" class="flow"/>
+
+  <g>
+    <rect x="100" y="260" width="260" height="160" rx="18" class="card"/>
+    <rect x="124" y="286" width="40" height="26" rx="13" fill="#013c55"/>
+    <text x="144" y="304" text-anchor="middle" class="eyebrow" fill="#00d4c7">01</text>
+    <path d="M292 289h28v35h-28zM298 296h16M298 304h16M298 312h10" fill="none" stroke="#00d4c7" stroke-width="2" stroke-linecap="round"/>
+    <text x="124" y="345" class="card-title">Select the question</text>
+    <text x="124" y="370" class="body">Editor chooses a node and intent.</text>
+    <text x="124" y="393" class="small">Explain · edit · remove · add</text>
+  </g>
+
+  <g>
+    <rect x="465" y="180" width="360" height="240" rx="20" class="card"/>
+    <rect x="489" y="206" width="40" height="26" rx="13" fill="#143d65"/>
+    <text x="509" y="224" text-anchor="middle" class="eyebrow" fill="#7fbcff">02</text>
+    <text x="555" y="225" class="card-title">Collect only relevant evidence</text>
+    <text x="489" y="254" class="body">The agent reads the active revision first, then</text>
+    <text x="489" y="274" class="body">selects the smallest useful evidence set.</text>
+
+    <rect x="489" y="296" width="94" height="31" rx="15.5" fill="#1b3250" stroke="#3c6088"/>
+    <text x="536" y="316" text-anchor="middle" class="pill">REVISION</text>
+    <rect x="594" y="296" width="83" height="31" rx="15.5" fill="#1b3250" stroke="#3c6088"/>
+    <text x="636" y="316" text-anchor="middle" class="pill">IMPACT</text>
+    <rect x="688" y="296" width="91" height="31" rx="15.5" fill="#1b3250" stroke="#3c6088"/>
+    <text x="734" y="316" text-anchor="middle" class="pill">LINEAGE</text>
+
+    <rect x="489" y="338" width="85" height="31" rx="15.5" fill="#1b3250" stroke="#3c6088"/>
+    <text x="532" y="358" text-anchor="middle" class="pill">TIMING</text>
+    <rect x="585" y="338" width="114" height="31" rx="15.5" fill="#1b3250" stroke="#3c6088"/>
+    <text x="642" y="358" text-anchor="middle" class="pill">SCRIPT SEARCH</text>
+    <rect x="710" y="338" width="69" height="31" rx="15.5" fill="#163e47" stroke="#318c94"/>
+    <text x="744" y="358" text-anchor="middle" class="pill">≤ 3</text>
+
+    <path d="M490 393H800" stroke="#2d4b70"/>
+    <circle cx="505" cy="402" r="5" fill="#00d4c7"/>
+    <text x="519" y="406" class="small">Memory can inform approved preferences—not screenplay truth.</text>
+  </g>
+
+  <g>
+    <rect x="930" y="260" width="280" height="160" rx="18" class="card"/>
+    <rect x="954" y="286" width="40" height="26" rx="13" fill="#32245e"/>
+    <text x="974" y="304" text-anchor="middle" class="eyebrow" fill="#c4b5fd">03</text>
+    <path d="M1147 286l23 13v26l-23 13-23-13v-26z" fill="none" stroke="#c4b5fd" stroke-width="2"/>
+    <circle cx="1147" cy="312" r="5" fill="#c4b5fd"/>
+    <text x="954" y="345" class="card-title">Synthesize a proposal</text>
+    <text x="954" y="370" class="body">Return affected nodes, evidence,</text>
+    <text x="954" y="390" class="body">timing delta, uncertainty, and</text>
+    <text x="954" y="410" class="body">the decision still required.</text>
+  </g>
+
+  <g>
+    <rect x="1010" y="515" width="300" height="160" rx="18" class="card"/>
+    <rect x="1034" y="541" width="40" height="26" rx="13" fill="#50203d"/>
+    <text x="1054" y="559" text-anchor="middle" class="eyebrow" fill="#ff80b5">04</text>
+    <path d="M1237 540l18 8v20c0 17-18 27-18 27s-18-10-18-27v-20z" fill="none" stroke="#ff80b5" stroke-width="2"/>
+    <path d="M1229 566l6 6 11-13" fill="none" stroke="#ff80b5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="1034" y="600" class="card-title">Run the critic check</text>
+    <text x="1034" y="625" class="body">Reject missing evidence and false</text>
+    <text x="1034" y="645" class="body">claims that a change was applied.</text>
+    <text x="1034" y="664" class="small">If it fails, revise the proposal.</text>
+  </g>
+
+  <g>
+    <rect x="505" y="600" width="350" height="180" rx="20" class="card"/>
+    <rect x="529" y="626" width="40" height="26" rx="13" fill="#4b3911"/>
+    <text x="549" y="644" text-anchor="middle" class="eyebrow" fill="#ffd166">05</text>
+    <circle cx="790" cy="640" r="24" fill="none" stroke="#ffd166" stroke-width="2"/>
+    <path d="M779 641l8 8 15-19" fill="none" stroke="#ffd166" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="529" y="685" class="card-title">The editor makes the call</text>
+    <text x="529" y="710" class="body">Review the proposal in the same workspace.</text>
+    <rect x="529" y="730" width="76" height="29" rx="14.5" fill="#213550"/>
+    <text x="567" y="749" text-anchor="middle" class="pill">KEEP</text>
+    <rect x="615" y="730" width="76" height="29" rx="14.5" fill="#213550"/>
+    <text x="653" y="749" text-anchor="middle" class="pill">EDIT</text>
+    <rect x="701" y="730" width="105" height="29" rx="14.5" fill="#6c5115"/>
+    <text x="754" y="749" text-anchor="middle" class="pill">APPROVE</text>
+  </g>
+
+  <g>
+    <rect x="1340" y="180" width="194" height="600" rx="20" class="node"/>
+    <path d="M1437 216l25 12v29c0 24-25 38-25 38s-25-14-25-38v-29z" fill="#143d65" stroke="#7fbcff" stroke-width="2"/>
+    <path d="M1428 254h18M1437 245v18" stroke="#7fbcff" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="1437" y="330" text-anchor="middle" class="eyebrow" fill="#7fbcff">HARD GUARDRAILS</text>
+    <path d="M1364 354H1510M1364 448H1510M1364 542H1510M1364 636H1510" stroke="#284565"/>
+    <circle cx="1378" cy="383" r="5" fill="#00d4c7"/>
+    <text x="1394" y="380" class="guard">Read-only graph tools</text>
+    <text x="1394" y="400" class="small">No repository writes</text>
+    <circle cx="1378" cy="477" r="5" fill="#7fbcff"/>
+    <text x="1394" y="474" class="guard">No data-store secrets</text>
+    <text x="1394" y="494" class="small">The agent never receives</text>
+    <text x="1394" y="510" class="small">ClickHouse credentials</text>
+    <circle cx="1378" cy="571" r="5" fill="#ff80b5"/>
+    <text x="1394" y="568" class="guard">No automatic approval</text>
+    <text x="1394" y="588" class="small">Every recommendation stops</text>
+    <text x="1394" y="604" class="small">before the editorial decision</text>
+    <circle cx="1378" cy="665" r="5" fill="#ffd166"/>
+    <text x="1394" y="662" class="guard">Critic required</text>
+    <text x="1394" y="682" class="small">The final response must</text>
+    <text x="1394" y="698" class="small">be ready for human review</text>
+  </g>
+
+  <text x="64" y="850" class="small">The agent proposes a consequence. The editor remains the screenplay authority.</text>
+  <text x="1534" y="850" text-anchor="end" class="small">CLIO evidence loop</text>
+</svg>

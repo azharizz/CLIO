@@ -3,6 +3,14 @@
 Project: `clio-continuity-20260909`  
 Primary Firebase site: [clio-agentic.web.app](https://clio-agentic.web.app)
 
+<p align="center">
+  <img src="assets/clio-live-production-path.svg" alt="CLIO live production path from the editor workspace through Firebase Hosting, Cloud Run, Agent Runtime, Memory Bank, and ClickHouse Cloud" width="100%">
+</p>
+
+The teal dashes animate from each source toward its target. The editable
+[draw.io source](assets/clio-live-production-path.drawio) is included beside
+the SVG.
+
 ## Runtime topology
 
 ```text
@@ -20,6 +28,10 @@ to the current Cloud Run revision. Cloud Run reads ClickHouse credentials and
 the OpenRouter key from Secret Manager; no browser credential is exposed.
 
 ## Agent routing
+
+<p align="center">
+  <img src="assets/clio-agent-evidence-loop.svg" alt="CLIO evidence agent loop from editor selection through evidence reads, proposal, critic check, and human decision" width="100%">
+</p>
 
 The primary and fallback Agent Runtime resources are regional control-plane
 resources in `us-central1`. Their ADK Gemini clients use Vertex's `global`
